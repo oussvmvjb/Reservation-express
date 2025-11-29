@@ -144,7 +144,7 @@ class ApiService {
 
   // ========== RÉSERVATIONS ==========
 
-  static Future<http.Response> createReservation(Reservation reservation) async {
+ static Future<http.Response> createReservation(Reservation reservation) async {
     try {
       return await http.post(
         Uri.parse('$baseUrl/reservations'),
@@ -153,10 +153,12 @@ class ApiService {
           'user': {'id': reservation.userId},
           'table': {'id': reservation.tableId},
           'reservationDate': reservation.reservationDate.toIso8601String().split('T')[0],
-          'reservationTime': '${reservation.reservationTime.hour.toString().padLeft(2, '0')}:${reservation.reservationTime.minute.toString().padLeft(2, '0')}',
+          'reservationTime': reservation.reservationTime,
           'numberOfGuests': reservation.numberOfGuests,
           'durationHours': reservation.durationHours,
           'specialRequests': reservation.specialRequests,
+          'totalPrice': reservation.totalPrice,
+          'status': reservation.status,
         }),
       );
     } catch (e) {
@@ -164,23 +166,25 @@ class ApiService {
     }
   }
 
-  static Future<List<Reservation>> getUserReservations(int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/reservations/user/$userId'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Reservation.fromJson(json)).toList();
-      } else {
-        throw Exception('Échec du chargement des réservations: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Erreur réseau: $e');
+// Dans ApiService.dart
+static Future<List<Reservation>> getUserReservations(int userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/reservations/user/$userId'),
+      headers: headers,
+    );
+    
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      print('📊 Données brutes des réservations: $data');
+      return data.map((json) => Reservation.fromJson(json)).toList();
+    } else {
+      throw Exception('Échec du chargement des réservations: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Erreur réseau: $e');
   }
+}
 
   static Future<http.Response> cancelReservation(int reservationId) async {
     try {
