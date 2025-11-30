@@ -23,7 +23,14 @@ class RestaurantTable {
 
   factory RestaurantTable.fromJson(Map<String, dynamic> json) {
     print('🔄 Parsing table JSON: $json'); // Debug
-    
+
+    double parsedPrice = 0.0;
+    final priceRaw = json['pricePerHour'];
+    if (priceRaw is num) {
+      parsedPrice = priceRaw.toDouble();
+    } else if (priceRaw is String) {
+      parsedPrice = double.tryParse(priceRaw) ?? 0.0;
+    }
     return RestaurantTable(
       id: json['id']?.toInt() ?? 0,
       tableNumber: json['tableNumber'] ?? '',
@@ -31,7 +38,7 @@ class RestaurantTable {
       location: json['location'],
       tableType: json['tableType'],
       status: json['status'] ?? 'available',
-      pricePerHour: (json['pricePerHour'] as num?)?.toDouble(),
+      pricePerHour: parsedPrice,
       imageUrl: json['imageUrl'],
       locationDescription: json['locationDescription'],
     );

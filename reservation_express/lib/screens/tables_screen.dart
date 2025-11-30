@@ -56,9 +56,16 @@ class _TablesScreenState extends State<TablesScreen> {
       if (filter == 'Toutes') {
         _filteredTables = _tables;
       } else if (filter == 'Disponibles') {
-        _filteredTables = _tables.where((table) => table.status == 'available').toList();
+        _filteredTables =
+            _tables.where((table) => table.status == 'available').toList();
       } else {
-        _filteredTables = _tables.where((table) => table.tableType?.toLowerCase() == filter.toLowerCase()).toList();
+        _filteredTables =
+            _tables
+                .where(
+                  (table) =>
+                      table.tableType?.toLowerCase() == filter.toLowerCase(),
+                )
+                .toList();
       }
     });
   }
@@ -85,26 +92,32 @@ class _TablesScreenState extends State<TablesScreen> {
     );
   }
 
-  Future<DateTime?> _selectDate(BuildContext context, {required DateTime initialDate}) async {
+  Future<DateTime?> _selectDate(
+    BuildContext context, {
+    required DateTime initialDate,
+  }) async {
     final now = DateTime.now();
 
-    final safeInitialDate = initialDate.isBefore(DateTime(now.year, now.month, now.day))
-        ? now
-        : initialDate;
+    final safeInitialDate =
+        initialDate.isBefore(DateTime(now.year, now.month, now.day))
+            ? now
+            : initialDate;
 
     final picked = await showDatePicker(
       context: context,
       initialDate: safeInitialDate,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(Duration(days: 365)),
-      locale: Locale('fr', 'FR'),
     );
 
     return picked;
   }
 
   // Méthode pour sélectionner l'heure
-  Future<TimeOfDay?> _selectTime(BuildContext context, {TimeOfDay? initialTime}) async {
+  Future<TimeOfDay?> _selectTime(
+    BuildContext context, {
+    TimeOfDay? initialTime,
+  }) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: initialTime ?? _selectedTime,
@@ -119,384 +132,30 @@ class _TablesScreenState extends State<TablesScreen> {
   }
 
   void _showTableDetails(RestaurantTable table) {
-    // On ouvre la bottom sheet et on garde les sélections locales
-    DateTime modalDate = _selectedDate;
-    TimeOfDay modalTime = _selectedTime;
-    int modalDuration = _selectedDuration;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Handle
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.only(top: 10, bottom: 10),
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          'Table ${table.tableNumber}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      _buildTableImage(table),
-                      SizedBox(height: 20),
-
-                      // Date/Time selection (uses modal's local variables)
-                      _buildDateTimeSelection(
-                        context,
-                        setModalState,
-                        table,
-                        modalDate,
-                        modalTime,
-                        modalDuration,
-                        (DateTime d) => setModalState(() => modalDate = d),
-                        (TimeOfDay t) => setModalState(() => modalTime = t),
-                        (int h) => setModalState(() => modalDuration = h),
-                      ),
-
-                      SizedBox(height: 20),
-                      _buildDetailSectionWithLocalSelection(table, modalDuration),
-                      SizedBox(height: 20),
-
-                      // Action buttons
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: table.status == 'available'
-                              ? () async {
-                                  // Appeler la réservation tout en passant les valeurs locales
-                                  final reserved = await _reserveTable(
-                                    table,
-                                    reservationDate: modalDate,
-                                    reservationTime: modalTime,
-                                    reservationDuration: modalDuration,
-                                  );
-
-                                  if (reserved) {
-                                    // fermer la modal après réservation réussie
-                                    if (mounted) Navigator.pop(context);
-                                  }
-                                }
-                              : null,
-                          child: Text(
-                            table.status == 'available' ? 'Réserver cette table' : 'Indisponible',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: table.status == 'available' ? Colors.blue : Colors.grey,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        return TableDetailsModal(
+          table: table,
+          selectedDate: _selectedDate,
+          selectedTime: _selectedTime,
+          selectedDuration: _selectedDuration,
+          onReserveTable: _reserveTable,
+          getTableColor: _getTableColor,
+          capitalize: _capitalize,
+          getStatusText: _getStatusText,
+          getStatusColor: _getStatusColor,
         );
       },
     );
   }
 
-  Widget _buildDateTimeSelection(
-    BuildContext context,
-    StateSetter setModalState,
-    RestaurantTable table,
-    DateTime modalDate,
-    TimeOfDay modalTime,
-    int modalDuration,
-    ValueChanged<DateTime> onDateChanged,
-    ValueChanged<TimeOfDay> onTimeChanged,
-    ValueChanged<int> onDurationChanged,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Détails de la réservation',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue[800],
-            ),
-          ),
-          SizedBox(height: 16),
-
-          // Sélection de la date
-          _buildDateTimeRow(
-            context,
-            'Date',
-            '${modalDate.day}/${modalDate.month}/${modalDate.year}',
-            Icons.calendar_today,
-            () async {
-              final picked = await _selectDate(context, initialDate: modalDate);
-              if (picked != null) onDateChanged(picked);
-            },
-          ),
-          SizedBox(height: 12),
-
-          // Sélection de l'heure
-          _buildDateTimeRow(
-            context,
-            'Heure',
-            '${modalTime.hour.toString().padLeft(2, '0')}:${modalTime.minute.toString().padLeft(2, '0')}',
-            Icons.access_time,
-            () async {
-              final picked = await _selectTime(context, initialTime: modalTime);
-              if (picked != null) onTimeChanged(picked);
-            },
-          ),
-          SizedBox(height: 12),
-
-          // Sélection de la durée
-          _buildDurationSelectionLocal(modalDuration, onDurationChanged),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDateTimeRow(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.blue, size: 20),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDurationSelectionLocal(int modalDuration, ValueChanged<int> onDurationChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Durée',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(height: 8),
-        Row(
-          children: [1, 2, 3, 4]
-              .map((duration) => Expanded(
-                    child: Container(
-                      margin: EdgeInsets.only(right: duration < 4 ? 8 : 0),
-                      child: ChoiceChip(
-                        label: Text('$duration h'),
-                        selected: modalDuration == duration,
-                        onSelected: (selected) {
-                          onDurationChanged(duration);
-                        },
-                        selectedColor: Colors.blue,
-                        labelStyle: TextStyle(
-                          color: modalDuration == duration ? Colors.white : Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ))
-              .toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTableImage(RestaurantTable table) {
-    final color = _getTableColor(table.tableType);
-    return Container(
-      height: 150,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.7),
-            color.withOpacity(0.9),
-          ],
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.table_restaurant,
-            size: 50,
-            color: Colors.white,
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Table ${table.tableNumber}',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            _capitalize(table.tableType ?? 'Standard'),
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSectionWithLocalSelection(RestaurantTable table, int modalDuration) {
-    final totalPrice = (table.pricePerHour ?? 0) * modalDuration;
-
-    return Column(
-      children: [
-        _buildDetailRow('Capacité', '${table.capacity} personnes', Icons.people),
-        _buildDetailRow('Type', _capitalize(table.tableType ?? 'Standard'), Icons.category),
-        _buildDetailRow('Statut', _getStatusText(table.status), Icons.circle, color: _getStatusColor(table.status)),
-        _buildDetailRow('Prix/heure', '${table.pricePerHour ?? 0}€', Icons.attach_money),
-        _buildDetailRow('Durée', '$modalDuration heure${modalDuration > 1 ? 's' : ''}', Icons.timer),
-        _buildDetailRow('Prix total', '${totalPrice}€', Icons.euro, color: Colors.green),
-        if (table.locationDescription != null && table.locationDescription!.isNotEmpty)
-          _buildDetailRow('Emplacement', table.locationDescription!, Icons.location_on),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, IconData icon, {Color? color}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color ?? Colors.blue, size: 20),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: color ?? Colors.grey[800],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Réserve la table en utilisant des valeurs passées (locales de la modal)
   /// Retourne true si la réservation a réussi.
-  Future<bool> _reserveTable(
-    RestaurantTable table, {
+  Future<bool> _reserveTable({
+    required RestaurantTable table,
     required DateTime reservationDate,
     required TimeOfDay reservationTime,
     required int reservationDuration,
@@ -552,7 +211,10 @@ class _TablesScreenState extends State<TablesScreen> {
       _showSuccess('⏳ Réservation en cours...');
 
       // 1. Mettre à jour le statut de la table dans la BD
-      final statusResponse = await ApiService.updateTableStatus(table.id, 'reserved');
+      final statusResponse = await ApiService.updateTableStatus(
+        table.id,
+        'reserved',
+      );
 
       if (statusResponse.statusCode != 200) {
         _showError('Erreur lors de la réservation de la table');
@@ -565,15 +227,18 @@ class _TablesScreenState extends State<TablesScreen> {
         "user": {"id": userId},
         "table": {"id": table.id},
         "reservationDate": reservationDateTime.toIso8601String().split('T')[0],
-        "reservationTime": "${reservationTime.hour.toString().padLeft(2, '0')}:${reservationTime.minute.toString().padLeft(2, '0')}",
+        "reservationTime":
+            "${reservationTime.hour.toString().padLeft(2, '0')}:${reservationTime.minute.toString().padLeft(2, '0')}",
         "numberOfGuests": table.capacity,
         "durationHours": reservationDuration,
         "totalPrice": totalPrice,
         "status": "confirmed",
-        "specialRequests": "Aucune demande particulière"
+        "specialRequests": "Aucune demande particulière",
       };
 
-      final reservationResponse = await ApiService.createReservation(reservationData);
+      final reservationResponse = await ApiService.createReservation(
+        reservationData,
+      );
 
       if (reservationResponse.statusCode == 201) {
         _showSuccess('✅ Table ${table.tableNumber} réservée avec succès!');
@@ -646,15 +311,31 @@ class _TablesScreenState extends State<TablesScreen> {
       appBar: AppBar(
         title: Text(
           'Nos Tables',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Nouvelle action : ouvrir le sélecteur de date (agenda) depuis la barre d'app
+          IconButton(
+            icon: Icon(Icons.calendar_today),
+            tooltip: 'Choisir une date',
+            onPressed: () async {
+              final picked = await _selectDate(
+                context,
+                initialDate: _selectedDate,
+              );
+              if (picked != null) {
+                _safeSetState(() {
+                  _selectedDate = picked;
+                });
+                _showSuccess(
+                  'Date sélectionnée: ${picked.day}/${picked.month}/${picked.year}',
+                );
+              }
+            },
+          ),
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: _loadTables,
@@ -662,123 +343,141 @@ class _TablesScreenState extends State<TablesScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body:
+          _isLoading
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Chargement des tables...',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              )
+              : Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Chargement des tables...',
-                    style: TextStyle(color: Colors.grey[600]),
+                  // Filtres
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    color: Colors.grey[50],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children:
+                            [
+                                  'Toutes',
+                                  'Disponibles',
+                                  'Indoor',
+                                  'Outdoor',
+                                  'VIP',
+                                ]
+                                .map(
+                                  (filter) => Container(
+                                    margin: EdgeInsets.only(right: 8),
+                                    child: FilterChip(
+                                      label: Text(filter),
+                                      selected: _selectedFilter == filter,
+                                      onSelected:
+                                          (selected) => _filterTables(filter),
+                                      backgroundColor: Colors.white,
+                                      selectedColor: Colors.blue,
+                                      checkmarkColor: Colors.white,
+                                      labelStyle: TextStyle(
+                                        color:
+                                            _selectedFilter == filter
+                                                ? Colors.white
+                                                : Colors.grey[700],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
+                  ),
+                  // Compteur
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${_filteredTables.length} table${_filteredTables.length > 1 ? 's' : ''} trouvée${_filteredTables.length > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${_tables.where((t) => t.status == 'available').length} disponible${_tables.where((t) => t.status == 'available').length > 1 ? 's' : ''}',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Liste des tables
+                  Expanded(
+                    child:
+                        _filteredTables.isEmpty
+                            ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.table_restaurant_outlined,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Aucune table trouvée',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Essayez de changer les filtres',
+                                    style: TextStyle(color: Colors.grey[500]),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : RefreshIndicator(
+                              onRefresh: _loadTables,
+                              child: ListView.builder(
+                                padding: EdgeInsets.only(bottom: 16),
+                                itemCount: _filteredTables.length,
+                                itemBuilder: (context, index) {
+                                  final table = _filteredTables[index];
+                                  return _buildTableCard(table);
+                                },
+                              ),
+                            ),
                   ),
                 ],
               ),
-            )
-          : Column(
-              children: [
-                // Filtres
-                Container(
-                  padding: EdgeInsets.all(16),
-                  color: Colors.grey[50],
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: ['Toutes', 'Disponibles', 'Indoor', 'Outdoor', 'VIP']
-                          .map((filter) => Container(
-                                margin: EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  label: Text(filter),
-                                  selected: _selectedFilter == filter,
-                                  onSelected: (selected) => _filterTables(filter),
-                                  backgroundColor: Colors.white,
-                                  selectedColor: Colors.blue,
-                                  checkmarkColor: Colors.white,
-                                  labelStyle: TextStyle(
-                                    color: _selectedFilter == filter ? Colors.white : Colors.grey[700],
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
-                // Compteur
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${_filteredTables.length} table${_filteredTables.length > 1 ? 's' : ''} trouvée${_filteredTables.length > 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${_tables.where((t) => t.status == 'available').length} disponible${_tables.where((t) => t.status == 'available').length > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Liste des tables
-                Expanded(
-                  child: _filteredTables.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.table_restaurant_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Aucune table trouvée',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Essayez de changer les filtres',
-                                style: TextStyle(color: Colors.grey[500]),
-                              ),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _loadTables,
-                          child: ListView.builder(
-                            padding: EdgeInsets.only(bottom: 16),
-                            itemCount: _filteredTables.length,
-                            itemBuilder: (context, index) {
-                              final table = _filteredTables[index];
-                              return _buildTableCard(table);
-                            },
-                          ),
-                        ),
-                ),
-              ],
-            ),
     );
   }
 
@@ -788,9 +487,7 @@ class _TablesScreenState extends State<TablesScreen> {
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => _showTableDetails(table),
         borderRadius: BorderRadius.circular(12),
@@ -829,9 +526,7 @@ class _TablesScreenState extends State<TablesScreen> {
                     SizedBox(height: 4),
                     Text(
                       '${table.capacity} personnes • ${_capitalize(table.tableType ?? 'Standard')}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
                     SizedBox(height: 4),
                     Row(
@@ -843,7 +538,8 @@ class _TablesScreenState extends State<TablesScreen> {
                             color: Colors.green,
                           ),
                         ),
-                        if (table.location != null && table.location!.isNotEmpty)
+                        if (table.location != null &&
+                            table.location!.isNotEmpty)
                           Padding(
                             padding: EdgeInsets.only(left: 8),
                             child: Text(
@@ -881,6 +577,468 @@ class _TablesScreenState extends State<TablesScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Widget séparé pour la modal de détails de table
+class TableDetailsModal extends StatefulWidget {
+  final RestaurantTable table;
+  final DateTime selectedDate;
+  final TimeOfDay selectedTime;
+  final int selectedDuration;
+  final Future<bool> Function({
+    required RestaurantTable table,
+    required DateTime reservationDate,
+    required TimeOfDay reservationTime,
+    required int reservationDuration,
+  })
+  onReserveTable;
+  final Color Function(String?) getTableColor;
+  final String Function(String) capitalize;
+  final String Function(String) getStatusText;
+  final Color Function(String) getStatusColor;
+
+  const TableDetailsModal({
+    Key? key,
+    required this.table,
+    required this.selectedDate,
+    required this.selectedTime,
+    required this.selectedDuration,
+    required this.onReserveTable,
+    required this.getTableColor,
+    required this.capitalize,
+    required this.getStatusText,
+    required this.getStatusColor,
+  }) : super(key: key);
+
+  @override
+  _TableDetailsModalState createState() => _TableDetailsModalState();
+}
+
+class _TableDetailsModalState extends State<TableDetailsModal> {
+  late DateTime _modalDate;
+  late TimeOfDay _modalTime;
+  late int _modalDuration;
+
+  @override
+  void initState() {
+    super.initState();
+    _modalDate = widget.selectedDate;
+    _modalTime = widget.selectedTime;
+    _modalDuration = widget.selectedDuration;
+  }
+
+  Future<DateTime?> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final safeInitialDate =
+        _modalDate.isBefore(DateTime(now.year, now.month, now.day))
+            ? now
+            : _modalDate;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: safeInitialDate,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(Duration(days: 365)),
+    );
+
+    return picked;
+  }
+
+  Future<TimeOfDay?> _selectTime(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _modalTime,
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+    return picked;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalPrice = (widget.table.pricePerHour ?? 0) * _modalDuration;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  margin: EdgeInsets.only(top: 10, bottom: 10),
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  'Table ${widget.table.tableNumber}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[800],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              _buildTableImage(widget.table),
+              SizedBox(height: 20),
+
+              // Date/Time selection
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Détails de la réservation',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // Sélection de la date
+                    _buildDateTimeRow(
+                      'Date',
+                      '${_modalDate.day}/${_modalDate.month}/${_modalDate.year}',
+                      Icons.calendar_today,
+                      () async {
+                        final picked = await _selectDate(context);
+                        if (picked != null) {
+                          setState(() {
+                            _modalDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(height: 12),
+
+                    // Sélection de l'heure
+                    _buildDateTimeRow(
+                      'Heure',
+                      '${_modalTime.hour.toString().padLeft(2, '0')}:${_modalTime.minute.toString().padLeft(2, '0')}',
+                      Icons.access_time,
+                      () async {
+                        final picked = await _selectTime(context);
+                        if (picked != null) {
+                          setState(() {
+                            _modalTime = picked;
+                          });
+                        }
+                      },
+                    ),
+                    SizedBox(height: 12),
+
+                    // Sélection de la durée
+                    _buildDurationSelection(),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
+              _buildDetailSection(totalPrice),
+              SizedBox(height: 20),
+
+              // Action buttons
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed:
+                      widget.table.status == 'available'
+                          ? () async {
+                            final reserved = await widget.onReserveTable(
+                              table: widget.table,
+                              reservationDate: _modalDate,
+                              reservationTime: _modalTime,
+                              reservationDuration: _modalDuration,
+                            );
+
+                            if (reserved && mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                          : null,
+                  child: Text(
+                    widget.table.status == 'available'
+                        ? 'Réserver cette table'
+                        : 'Indisponible',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        widget.table.status == 'available'
+                            ? Colors.blue
+                            : Colors.grey,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateTimeRow(
+    String label,
+    String value,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue, size: 20),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Durée',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(height: 8),
+        Row(
+          children:
+              [1, 2, 3, 4]
+                  .map(
+                    (duration) => Expanded(
+                      child: Container(
+                        margin: EdgeInsets.only(right: duration < 4 ? 8 : 0),
+                        child: ChoiceChip(
+                          label: Text('$duration h'),
+                          selected: _modalDuration == duration,
+                          onSelected: (selected) {
+                            setState(() {
+                              _modalDuration = duration;
+                            });
+                          },
+                          selectedColor: Colors.blue,
+                          labelStyle: TextStyle(
+                            color:
+                                _modalDuration == duration
+                                    ? Colors.white
+                                    : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableImage(RestaurantTable table) {
+    final color = widget.getTableColor(table.tableType);
+    return Container(
+      height: 150,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: color,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.7), color.withOpacity(0.9)],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.table_restaurant, size: 50, color: Colors.white),
+          SizedBox(height: 8),
+          Text(
+            'Table ${table.tableNumber}',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            widget.capitalize(table.tableType ?? 'Standard'),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(double totalPrice) {
+    return Column(
+      children: [
+        _buildDetailRow(
+          'Capacité',
+          '${widget.table.capacity} personnes',
+          Icons.people,
+        ),
+        _buildDetailRow(
+          'Type',
+          widget.capitalize(widget.table.tableType ?? 'Standard'),
+          Icons.category,
+        ),
+        _buildDetailRow(
+          'Statut',
+          widget.getStatusText(widget.table.status),
+          Icons.circle,
+          color: widget.getStatusColor(widget.table.status),
+        ),
+        _buildDetailRow(
+          'Prix/heure',
+          '${widget.table.pricePerHour ?? 0}€',
+          Icons.attach_money,
+        ),
+        _buildDetailRow(
+          'Durée',
+          '$_modalDuration heure${_modalDuration > 1 ? 's' : ''}',
+          Icons.timer,
+        ),
+        _buildDetailRow(
+          'Prix total',
+          '${totalPrice}€',
+          Icons.euro,
+          color: Colors.green,
+        ),
+        if (widget.table.locationDescription != null &&
+            widget.table.locationDescription!.isNotEmpty)
+          _buildDetailRow(
+            'Emplacement',
+            widget.table.locationDescription!,
+            Icons.location_on,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(
+    String label,
+    String value,
+    IconData icon, {
+    Color? color,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color ?? Colors.blue, size: 20),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: color ?? Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
