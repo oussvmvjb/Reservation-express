@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import 'tables_screen.dart';
 import 'reservations_screen.dart';
 import 'menu_screen.dart';
+import 'mescommandes.dart'; // AJOUTER CET IMPORT
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -168,8 +169,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     subtitle: 'Historique des commandes',
                     color: Colors.purple,
                     onTap: () {
-                      // Naviguer vers l'écran des commandes
-                      _showComingSoon();
+                      // CORRECTION : Naviguer vers MesCommandesScreen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MesCommandesScreen()),
+                      );
                     },
                   ),
                   _buildServiceCard(

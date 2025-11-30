@@ -1,5 +1,5 @@
 class MenuItem {
-  final int? id;
+  final int id;
   final String category;
   final String name;
   final String? description;
@@ -9,7 +9,7 @@ class MenuItem {
   final int? preparationTime;
 
   MenuItem({
-    this.id,
+    required this.id,
     required this.category,
     required this.name,
     this.description,

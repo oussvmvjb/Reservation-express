@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'screens/tables_screen.dart';
 import 'screens/reservations_screen.dart';
 import 'screens/menu_screen.dart';
+import 'screens/mescommandes.dart'; // IMPORT AJOUTÉ
 
 void main() {
   runApp(const MyApp());
@@ -27,9 +28,10 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/home': (context) => HomeScreen(),
-        '/tables': (context) => TablesScreen(), // AJOUT DE CETTE ROUTE
+        '/tables': (context) => TablesScreen(),
         '/reservations': (context) => ReservationsScreen(),
         '/menu': (context) => MenuScreen(),
+        '/mes-commandes': (context) => MesCommandesScreen(), // ROUTE AJOUTÉE
       },
       debugShowCheckedModeBanner: false,
     );

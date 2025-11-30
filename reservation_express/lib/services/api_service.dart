@@ -253,42 +253,80 @@ static Future<List<Reservation>> getUserReservations(int userId) async {
     }
   }
 
-  // ========== COMMANDES ==========
-
-  static Future<http.Response> createOrder(Order order) async {
-    try {
-      return await http.post(
-        Uri.parse('$baseUrl/orders'),
-        headers: headers,
-        body: json.encode({
-          'reservation': {'id': order.reservationId},
-          'user': {'id': order.userId},
-          'table': {'id': order.tableId},
-          'totalAmount': order.totalAmount,
-        }),
-      );
-    } catch (e) {
-      throw Exception('Erreur de création de commande: $e');
-    }
+// ========== COMMANDES ==========
+static Future<http.Response> createOrder(Map<String, dynamic> orderData) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/orders'),
+      headers: headers,
+      body: json.encode(orderData),
+    );
+    return response;
+  } catch (e) {
+    throw Exception('Erreur de création de commande: $e');
   }
+}
 
-  static Future<List<Order>> getUserOrders(int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/orders/user/$userId'),
-        headers: headers,
-      );
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Order.fromJson(json)).toList();
-      } else {
-        throw Exception('Échec du chargement des commandes: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Erreur réseau: $e');
+static Future<List<Order>> getUserOrders(int userId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/orders/user/$userId'),
+      headers: headers,
+    );
+    
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data.map((json) => Order.fromJson(json)).toList();
+    } else {
+      throw Exception('Échec du chargement des commandes: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Erreur réseau: $e');
   }
+}
+
+static Future<Order?> getOrderById(int orderId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/orders/$orderId'),
+      headers: headers,
+    );
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return Order.fromJson(data);
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw Exception('Échec du chargement de la commande: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Erreur réseau: $e');
+  }
+}
+
+static Future<http.Response> updateOrderStatus(int orderId, String status) async {
+  try {
+    return await http.put(
+      Uri.parse('$baseUrl/orders/$orderId/status'),
+      headers: headers,
+      body: json.encode({'status': status}),
+    );
+  } catch (e) {
+    throw Exception('Erreur de mise à jour du statut: $e');
+  }
+}
+
+static Future<http.Response> cancelOrder(int orderId) async {
+  try {
+    return await http.put(
+      Uri.parse('$baseUrl/orders/$orderId/cancel'),
+      headers: headers,
+    );
+  } catch (e) {
+    throw Exception('Erreur d\'annulation: $e');
+  }
+}
 
   // ========== SANTÉ DE L'API ==========
 
