@@ -1,49 +1,53 @@
 class RestaurantTable {
-  final int? id;
+  final int id;
   final String tableNumber;
   final int capacity;
-  final String tableType;
+  final String? location;
+  final String? tableType;
   final String status;
-  final String? locationDescription;
-  final double pricePerHour;
+  final double? pricePerHour;
   final String? imageUrl;
+  final String? locationDescription;
 
   RestaurantTable({
-    this.id,
+    required this.id,
     required this.tableNumber,
     required this.capacity,
-    required this.tableType,
+    this.location,
+    this.tableType,
     required this.status,
-    this.locationDescription,
-    required this.pricePerHour,
+    this.pricePerHour,
     this.imageUrl,
+    this.locationDescription,
   });
 
-  // Conversion de l'objet RestaurantTable en Map pour JSON
+  factory RestaurantTable.fromJson(Map<String, dynamic> json) {
+    print('🔄 Parsing table JSON: $json'); // Debug
+    
+    return RestaurantTable(
+      id: json['id']?.toInt() ?? 0,
+      tableNumber: json['tableNumber'] ?? '',
+      capacity: json['capacity']?.toInt() ?? 0,
+      location: json['location'],
+      tableType: json['tableType'],
+      status: json['status'] ?? 'available',
+      pricePerHour: (json['pricePerHour'] as num?)?.toDouble(),
+      imageUrl: json['imageUrl'],
+      locationDescription: json['locationDescription'],
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'tableNumber': tableNumber,
       'capacity': capacity,
+      'location': location,
       'tableType': tableType,
       'status': status,
-      'locationDescription': locationDescription,
       'pricePerHour': pricePerHour,
       'imageUrl': imageUrl,
+      'locationDescription': locationDescription,
     };
-  }
-
-  // Création d'un RestaurantTable à partir d'un Map (JSON)
-  factory RestaurantTable.fromJson(Map<String, dynamic> json) {
-    return RestaurantTable(
-      id: json['id'],
-      tableNumber: json['tableNumber'],
-      capacity: json['capacity'],
-      tableType: json['tableType'],
-      status: json['status'],
-      locationDescription: json['locationDescription'],
-      pricePerHour: (json['pricePerHour'] as num).toDouble(),
-      imageUrl: json['imageUrl'],
-    );
   }
 }

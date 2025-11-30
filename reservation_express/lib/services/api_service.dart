@@ -121,7 +121,21 @@ class ApiService {
       throw Exception('Erreur réseau: $e');
     }
   }
-
+// Dans ApiService.dart - AJOUTEZ CETTE MÉTHODE
+static Future<http.Response> updateTableStatus(int tableId, String newStatus) async {
+  try {
+    final response = await http.put(
+      Uri.parse('$baseUrl/tables/$tableId/status'),
+      headers: headers,
+      body: json.encode({
+        'status': newStatus,
+      }),
+    );
+    return response;
+  } catch (e) {
+    throw Exception('Erreur de mise à jour du statut de la table: $e');
+  }
+}
   static Future<RestaurantTable?> getTableById(int id) async {
     try {
       final response = await http.get(
@@ -144,44 +158,59 @@ class ApiService {
 
   // ========== RÉSERVATIONS ==========
 
- static Future<http.Response> createReservation(Reservation reservation) async {
-    try {
-      return await http.post(
-        Uri.parse('$baseUrl/reservations'),
-        headers: headers,
-        body: json.encode({
-          'user': {'id': reservation.userId},
-          'table': {'id': reservation.tableId},
-          'reservationDate': reservation.reservationDate.toIso8601String().split('T')[0],
-          'reservationTime': reservation.reservationTime,
-          'numberOfGuests': reservation.numberOfGuests,
-          'durationHours': reservation.durationHours,
-          'specialRequests': reservation.specialRequests,
-          'totalPrice': reservation.totalPrice,
-          'status': reservation.status,
-        }),
-      );
-    } catch (e) {
-      throw Exception('Erreur de création de réservation: $e');
-    }
+// Dans ApiService.dart - CORRECTION de createReservation
+static Future<http.Response> createReservation(Map<String, dynamic> reservationData) async {
+  try {
+    return await http.post(
+      Uri.parse('$baseUrl/reservations'),
+      headers: headers,
+      body: json.encode(reservationData),
+    );
+  } catch (e) {
+    throw Exception('Erreur de création de réservation: $e');
   }
+}
 
-// Dans ApiService.dart
 static Future<List<Reservation>> getUserReservations(int userId) async {
   try {
+    print('🌐 Appel API: $baseUrl/reservations/user/$userId');
+    
     final response = await http.get(
       Uri.parse('$baseUrl/reservations/user/$userId'),
       headers: headers,
     );
     
+    print('📡 Réponse API - Status: ${response.statusCode}');
+    print('📡 Réponse API - Body: ${response.body}');
+    
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
-      print('📊 Données brutes des réservations: $data');
-      return data.map((json) => Reservation.fromJson(json)).toList();
+      print('✅ ${data.length} réservations reçues de l\'API');
+      
+      List<Reservation> reservations = data.map((json) => Reservation.fromJson(json)).toList();
+      
+      // Debug détaillé
+      for (var i = 0; i < reservations.length; i++) {
+        final reservation = reservations[i];
+        print('''
+📋 Réservation ${i + 1}:
+   - ID: ${reservation.id}
+   - User ID: ${reservation.userId}
+   - Table ID: ${reservation.tableId}
+   - Table object: ${reservation.table != null ? 'PRÉSENT' : 'ABSENT'}
+   - Table number: ${reservation.table?.tableNumber ?? 'N/A'}
+   - Date: ${reservation.getFormattedDate()}
+   - Heure: ${reservation.reservationTime}
+   - Statut: ${reservation.status}
+''');
+      }
+      
+      return reservations;
     } else {
       throw Exception('Échec du chargement des réservations: ${response.statusCode}');
     }
   } catch (e) {
+    print('❌ Erreur réseau lors du chargement des réservations: $e');
     throw Exception('Erreur réseau: $e');
   }
 }
