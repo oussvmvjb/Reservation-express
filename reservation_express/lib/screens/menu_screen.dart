@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reservation_express/models/MenuItem.dart';
 import 'package:reservation_express/models/Order.dart';
+import 'package:reservation_express/services/auth_service.dart';
 import '../services/api_service.dart';
 import 'dart:convert'; // Ajouter cette importation
 
@@ -18,7 +19,6 @@ class _MenuScreenState extends State<MenuScreen> {
   bool _isLoading = true;
   String _selectedCategory = 'Toutes';
   
-  // Panier d'achat
   List<CartItem> _cartItems = [];
   double _cartTotal = 0.0;
 
@@ -126,7 +126,6 @@ class _MenuScreenState extends State<MenuScreen> {
                       child: Text('Temps de préparation: ${item.preparationTime} min'),
                     ),
                   
-                  // Contrôle de quantité
                   Center(
                     child: Column(
                       children: [
@@ -380,38 +379,59 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Future<void> _confirmOrder() async {
-    try {
-      final userId = 1;
-      final reservationId = 3; 
-      final tableId = 1;
-      
-      final orderData = {
-        "reservation": {"id": reservationId},
-        "user": {"id": userId},
-        "table": {"id": tableId},
-        "totalAmount": _cartTotal,
-        "status": "pending",
-        "itemsJson": _formatItemsToJson(),
-        "itemsSummary": _formatItemsSummary(),
-      };
-
-      final response = await ApiService.createOrder(orderData);
-      
-      if (response.statusCode == 201) {
-        setState(() {
-          _cartItems.clear();
-          _cartTotal = 0.0;
-        });
-        Navigator.pop(context);
-        _showSuccess('✅ Commande créée avec succès!');
-      } else {
-        throw Exception('Erreur: ${response.statusCode}');
-      }
-    } catch (e) {
-      _showError('Erreur: $e');
+Future<void> _confirmOrder() async {
+  try {
+    final userId = await AuthService.getUserId();
+    
+    if (userId == null) {
+      _showError('Veuillez vous connecter pour commander');
+      return;
     }
+
+    // Récupérer et trier les réservations (plus récent en premier)
+    final reservations = await ApiService.getUserReservations(userId);
+    
+    if (reservations.isEmpty) {
+      _showError('Aucune réservation trouvée');
+      return;
+    }
+    
+    // Trier par ID décroissant (supposant que ID plus grand = plus récent)
+    reservations.sort((a, b) => b.id.compareTo(a.id));
+    final latestReservation = reservations.first;
+    
+    // Vérifier que la réservation a une table
+    if (latestReservation.table == null) {
+      _showError('Table non trouvée pour cette réservation');
+      return;
+    }
+
+    final orderData = {
+      "reservation": {"id": latestReservation.id},
+      "user": {"id": userId},
+      "table": {"id": latestReservation.table!.id},
+      "totalAmount": _cartTotal,
+      "status": "pending",
+      "itemsJson": _formatItemsToJson(),
+      "itemsSummary": _formatItemsSummary(),
+    };
+
+    final response = await ApiService.createOrder(orderData);
+    
+    if (response.statusCode == 201) {
+      setState(() {
+        _cartItems.clear();
+        _cartTotal = 0.0;
+      });
+      Navigator.pop(context);
+      _showSuccess('✅ Commande créée avec succès pour la table ${latestReservation.table!.tableNumber}!');
+    } else {
+      throw Exception('Erreur: ${response.statusCode}');
+    }
+  } catch (e) {
+    _showError('Erreur: $e');
   }
+}
 
   String _formatItemsToJson() {
     final itemsList = _cartItems.map((cartItem) {

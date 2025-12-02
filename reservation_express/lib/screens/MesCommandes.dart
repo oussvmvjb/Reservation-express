@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reservation_express/models/Order.dart';
 import 'package:reservation_express/services/api_service.dart';
+import 'package:reservation_express/services/auth_service.dart';
 
 class MesCommandesScreen extends StatefulWidget {
   const MesCommandesScreen({super.key});
@@ -17,23 +18,32 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserId();
-    _loadOrders();
+    _initUserAndOrders();
   }
 
-  void _loadUserId() {
-    // TODO: Récupérer l'ID de l'utilisateur connecté depuis le stockage local
-    _userId = 1; // À remplacer par l'ID réel de l'utilisateur
+  Future<void> _initUserAndOrders() async {
+    await _loadUserId();
+    await _loadOrders();
+  }
+
+  Future<void> _loadUserId() async {
+    final userId = await AuthService.getUserId();
+    setState(() {
+      _userId = userId;
+    });
   }
 
   Future<void> _loadOrders() async {
+    setState(() {
+      _isLoading = true;
+    });
     if (_userId == null) {
       setState(() {
         _isLoading = false;
       });
+      _showError("Utilisateur non connecté");
       return;
     }
-
     try {
       final orders = await ApiService.getUserOrders(_userId!);
       setState(() {
@@ -50,10 +60,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -113,10 +120,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
               Center(
                 child: Text(
                   'Détails de la commande',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 16),
@@ -124,18 +128,19 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
               _buildDetailRow('Date', _formatDate(order.orderDate)),
               _buildDetailRow('Heure', _formatTime(order.orderDate)),
               _buildDetailRow('Statut', _getStatusText(order.status)),
-              _buildDetailRow('Montant total', '${order.totalAmount.toStringAsFixed(2)}€'),
+              _buildDetailRow(
+                'Montant total',
+                '${order.totalAmount.toStringAsFixed(2)}€',
+              ),
               _buildDetailRow('Table', 'Table ${order.tableId}'),
               const SizedBox(height: 16),
-              
+
               // CORRECTION : Utiliser itemsSummary au lieu de Order qui n'existe pas
-              if (order.itemsSummary != null && order.itemsSummary!.isNotEmpty) ...[
+              if (order.itemsSummary != null &&
+                  order.itemsSummary!.isNotEmpty) ...[
                 const Text(
                   'Articles commandés:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 // Afficher le résumé des articles
@@ -144,13 +149,11 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
                   child: Text(order.itemsSummary!),
                 ),
                 const SizedBox(height: 16),
-              ] else if (order.itemsJson != null && order.itemsJson!.isNotEmpty) ...[
+              ] else if (order.itemsJson != null &&
+                  order.itemsJson!.isNotEmpty) ...[
                 const Text(
                   'Articles commandés:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 // Vous pouvez parser le JSON ici si nécessaire
@@ -160,7 +163,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -181,10 +184,7 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '$label:',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(value),
         ],
       ),
@@ -207,47 +207,45 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadOrders,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadOrders),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _orders.isEmpty
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _orders.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Aucune commande trouvée',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Vos commandes apparaîtront ici',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadOrders,
-                  child: ListView.builder(
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
-                      return _buildOrderCard(order);
-                    },
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Aucune commande trouvée',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Vos commandes apparaîtront ici',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
+              )
+              : RefreshIndicator(
+                onRefresh: _loadOrders,
+                child: ListView.builder(
+                  itemCount: _orders.length,
+                  itemBuilder: (context, index) {
+                    final order = _orders[index];
+                    return _buildOrderCard(order);
+                  },
+                ),
+              ),
     );
   }
 
@@ -284,7 +282,10 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(order.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),

@@ -107,59 +107,73 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
-  Future<void> _cancelReservation(int reservationId, int tableId) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Annuler la réservation'),
-          content: Text('Êtes-vous sûr de vouloir annuler cette réservation ?\n\nLa table sera remise disponible.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Non'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                _showSuccess('⏳ Annulation en cours...');
+
+
+Future<void> _cancelReservation(int reservationId, int tableId) async {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Supprimer la réservation'),
+        content: Text(
+          'Êtes-vous sûr de vouloir SUPPRIMER cette réservation ?\n\n'
+          '⚠️ Cette action est irréversible !\n'
+          'La réservation sera effacée et la table remise disponible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Non, garder'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              _showSuccess('⏳ Suppression en cours...');
+              
+              try {
+                // Supprimer complètement la réservation
+                final deleteResponse = await ApiService.deleteReservation(reservationId);
                 
-                try {
-                  // Essayer d'annuler la réservation
-                  await ApiService.cancelReservation(reservationId);
-                  print('✅ Réservation $reservationId annulée');
+                if (deleteResponse.statusCode == 200) {
+                  print('✅ Réservation $reservationId supprimée');
                   
-                  // Essayer de remettre la table disponible
+                  // Remettre la table disponible
                   try {
                     final statusResponse = await ApiService.updateTableStatus(tableId, 'available');
                     
                     if (statusResponse.statusCode == 200) {
                       print('✅ Table $tableId remise disponible');
-                      _showSuccess('✅ Réservation annulée et table remise disponible');
+                      _showSuccess('✅ Réservation supprimée et table remise disponible');
                     } else {
-                      print('⚠️ Réservation annulée mais table non mise à jour: ${statusResponse.statusCode}');
-                      _showSuccess('✅ Réservation annulée (problème table)');
+                      print('⚠️ Réservation supprimée mais erreur table: ${statusResponse.statusCode}');
+                      _showSuccess('✅ Réservation supprimée');
                     }
                   } catch (tableError) {
-                    print('⚠️ Réservation annulée mais erreur table: $tableError');
-                    _showSuccess('✅ Réservation annulée (erreur table)');
+                    print('⚠️ Réservation supprimée mais erreur table: $tableError');
+                    _showSuccess('✅ Réservation supprimée');
                   }
                   
                   // Recharger les données
                   await _loadReservations();
                   
-                } catch (reservationError) {
-                  print('❌ Erreur annulation réservation: $reservationError');
-                  _showError('Erreur lors de l\'annulation de la réservation');
+                } else {
+                  _showError('❌ Échec de la suppression: ${deleteResponse.statusCode}');
                 }
-              },
-              child: Text('Oui, annuler', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
+                
+              } catch (error) {
+                print('❌ Erreur suppression réservation: $error');
+                _showError('Erreur lors de la suppression: $error');
+              }
+            },
+            child: Text('Oui, supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
 
   void _navigateToTables() {
     Navigator.pushNamed(context, '/tables').then((_) {

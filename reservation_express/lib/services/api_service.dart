@@ -7,8 +7,8 @@ import 'package:reservation_express/models/RestaurantTable.dart';
 import 'package:reservation_express/models/user.dart';
 
 class ApiService {
- //static const String baseUrl = 'http://localhost:8080/api'; // Pour iOS/Web
-static const String baseUrl = 'http://10.0.2.2:8080/api';
+ static const String baseUrl = 'http://localhost:8080/api'; // Pour iOS/Web
+//static const String baseUrl = 'http://10.0.2.2:8080/api';
 
   // Headers communs
   static Map<String, String> get headers => {
@@ -162,10 +162,20 @@ static Future<http.Response> updateTableStatus(int tableId, String newStatus) as
 // Dans ApiService.dart - CORRECTION de createReservation
 static Future<http.Response> createReservation(Map<String, dynamic> reservationData) async {
   try {
+    // Assurez-vous que totalPrice est un nombre (double ou int)
+    final formattedData = {
+      ...reservationData,
+      'totalPrice': reservationData['totalPrice'] is double 
+          ? reservationData['totalPrice'] 
+          : (reservationData['totalPrice'] as num).toDouble(),
+    };
+    
+    print('Envoi de la réservation avec totalPrice: ${formattedData['totalPrice']}'); // Debug
+    
     return await http.post(
       Uri.parse('$baseUrl/reservations'),
       headers: headers,
-      body: json.encode(reservationData),
+      body: json.encode(formattedData),
     );
   } catch (e) {
     throw Exception('Erreur de création de réservation: $e');
@@ -215,7 +225,52 @@ static Future<List<Reservation>> getUserReservations(int userId) async {
     throw Exception('Erreur réseau: $e');
   }
 }
-
+static Future<http.Response> deleteReservation(int reservationId) async {
+  try {
+    print('🗑️ Suppression de la réservation ID: $reservationId');
+    
+    final response = await http.delete(
+      Uri.parse('$baseUrl/reservations/$reservationId'),
+      headers: headers,
+    );
+    
+    print('📡 Réponse suppression - Status: ${response.statusCode}');
+    print('📡 Réponse suppression - Body: ${response.body}');
+    
+    return response;
+  } catch (e) {
+    print('❌ Erreur lors de la suppression de la réservation: $e');
+    throw Exception('Erreur de suppression de réservation: $e');
+  }
+}
+static Future<bool> deleteReservationAndUpdateTable(int reservationId, int tableId) async {
+  try {
+    print('🔄 Suppression de la réservation $reservationId et mise à jour de la table $tableId');
+    
+    // 1. Supprimer la réservation
+    final deleteResponse = await deleteReservation(reservationId);
+    
+    if (deleteResponse.statusCode == 200) {
+      print('✅ Réservation supprimée avec succès');
+      
+      // 2. Mettre à jour le statut de la table (remettre disponible)
+      final tableResponse = await updateTableStatus(tableId, 'available');
+      
+      if (tableResponse.statusCode == 200) {
+        print('✅ Table $tableId remise à disponible');
+        return true;
+      } else {
+        print('⚠️ Réservation supprimée mais erreur sur la table: ${tableResponse.statusCode}');
+        return false;
+      }
+    }
+    
+    return false;
+  } catch (e) {
+    print('❌ Erreur lors de la suppression combinée: $e');
+    return false;
+  }
+}
   static Future<http.Response> cancelReservation(int reservationId) async {
     try {
       return await http.put(
