@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-Biblio3UsersApplication<biblio3-users>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "user.Biblio3UsersApplication",
+            "projectName": "biblio3-users",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
