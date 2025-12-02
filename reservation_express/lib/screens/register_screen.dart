@@ -15,7 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _emailChecked = false;
   bool _emailAvailable = true;
@@ -26,7 +26,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_emailController.text.isEmpty) return;
 
     try {
-      final exists = await ApiService.checkEmailExists(_emailController.text.trim());
+      final exists = await ApiService.checkEmailExists(
+        _emailController.text.trim(),
+      );
       setState(() {
         _emailChecked = true;
         _emailAvailable = !exists;
@@ -74,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (response.statusCode == 201) {
         final userData = json.decode(response.body);
-        
+
         await AuthService.saveUserData(
           userData['id'],
           userData['email'],
@@ -118,104 +120,106 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Bouton retour
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back, color: Colors.blue),
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
-              ),
-              
-              SizedBox(height: 20),
-              
-              // Titre
-              Text(
-                'Créer un compte',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[800],
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Rejoignez notre restaurant',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-              
-              SizedBox(height: 40),
-              
-              // Formulaire
-              _buildNameField(),
-              SizedBox(height: 20),
-              _buildEmailField(),
-              SizedBox(height: 20),
-              _buildPhoneField(),
-              SizedBox(height: 20),
-              _buildPasswordField(),
-              SizedBox(height: 20),
-              _buildConfirmPasswordField(),
-              SizedBox(height: 30),
-              
-              // Bouton d'inscription
-              _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _register,
-                        child: Text(
-                          'Créer mon compte',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+      appBar: AppBar(title: Text('Register'), backgroundColor: Colors.blue),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: Colors.white,
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back, color: Colors.blue),
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    'Créer un compte',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Rejoignez notre restaurant',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+
+                  SizedBox(height: 40),
+
+                  _buildNameField(),
+                  SizedBox(height: 20),
+                  _buildEmailField(),
+                  SizedBox(height: 20),
+                  _buildPhoneField(),
+                  SizedBox(height: 20),
+                  _buildPasswordField(),
+                  SizedBox(height: 20),
+                  _buildConfirmPasswordField(),
+                  SizedBox(height: 30),
+
+                  _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
                           ),
-                          elevation: 2,
+                          child: Text(
+                            'Créer mon compte',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                  SizedBox(height: 30),
+
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
+                      child: RichText(
+                        text: TextSpan(
+                          text: 'Déjà un compte? ',
+                          style: TextStyle(color: Colors.grey[600]),
+                          children: [
+                            TextSpan(
+                              text: 'Se connecter',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-              
-              SizedBox(height: 30),
-              
-              // Lien vers connexion
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Déjà un compte? ',
-                      style: TextStyle(color: Colors.grey[600]),
-                      children: [
-                        TextSpan(
-                          text: 'Se connecter',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -245,7 +249,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               hintText: 'Votre nom complet',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.person, color: Colors.grey[500]),
             ),
             style: TextStyle(fontSize: 16),
@@ -272,9 +279,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _emailChecked
-                  ? (_emailAvailable ? Colors.green : Colors.red)
-                  : Colors.grey[300]!,
+              color:
+                  _emailChecked
+                      ? (_emailAvailable ? Colors.green : Colors.red)
+                      : Colors.grey[300]!,
             ),
           ),
           child: TextField(
@@ -282,14 +290,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               hintText: 'votre@email.com',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.email, color: Colors.grey[500]),
-              suffixIcon: _emailChecked
-                  ? Icon(
-                      _emailAvailable ? Icons.check_circle : Icons.cancel,
-                      color: _emailAvailable ? Colors.green : Colors.red,
-                    )
-                  : null,
+              suffixIcon:
+                  _emailChecked
+                      ? Icon(
+                        _emailAvailable ? Icons.check_circle : Icons.cancel,
+                        color: _emailAvailable ? Colors.green : Colors.red,
+                      )
+                      : null,
             ),
             keyboardType: TextInputType.emailAddress,
             onChanged: (value) {
@@ -336,7 +348,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               hintText: 'Votre numéro de téléphone',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.phone, color: Colors.grey[500]),
             ),
             keyboardType: TextInputType.phone,
@@ -370,7 +385,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               hintText: 'Minimum 6 caractères',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.lock, color: Colors.grey[500]),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -409,10 +427,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _confirmPasswordController.text.isNotEmpty &&
-                      _passwordController.text != _confirmPasswordController.text
-                  ? Colors.red
-                  : Colors.grey[300]!,
+              color:
+                  _confirmPasswordController.text.isNotEmpty &&
+                          _passwordController.text !=
+                              _confirmPasswordController.text
+                      ? Colors.red
+                      : Colors.grey[300]!,
             ),
           ),
           child: TextField(
@@ -420,11 +440,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               hintText: 'Confirmez votre mot de passe',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[500]),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                  _obscureConfirmPassword
+                      ? Icons.visibility
+                      : Icons.visibility_off,
                   color: Colors.grey[500],
                 ),
                 onPressed: () {

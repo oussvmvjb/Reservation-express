@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reservation_express/models/RestaurantTable.dart';
 import '../services/api_service.dart';
+import '../utils/image_utils.dart';
 import '../services/auth_service.dart';
 
 class TablesScreen extends StatefulWidget {
@@ -25,7 +26,6 @@ class _TablesScreenState extends State<TablesScreen> {
     _loadTables();
   }
 
-  // Méthode safe pour setState — utilise "mounted"
   void _safeSetState(VoidCallback fn) {
     if (!mounted) return;
     setState(fn);
@@ -110,7 +110,6 @@ class _TablesScreenState extends State<TablesScreen> {
     return picked;
   }
 
-  // Méthode pour sélectionner l'heure
   Future<TimeOfDay?> _selectTime(
     BuildContext context, {
     TimeOfDay? initialTime,
@@ -149,7 +148,6 @@ class _TablesScreenState extends State<TablesScreen> {
     );
   }
 
-
   Future<bool> _reserveTable({
     required RestaurantTable table,
     required DateTime reservationDate,
@@ -163,7 +161,6 @@ class _TablesScreenState extends State<TablesScreen> {
         return false;
       }
 
-      // Formater la date et l'heure pour l'API
       final reservationDateTime = DateTime(
         reservationDate.year,
         reservationDate.month,
@@ -172,7 +169,6 @@ class _TablesScreenState extends State<TablesScreen> {
         reservationTime.minute,
       );
 
-      // Montrer la confirmation
       bool? confirm = await showDialog<bool>(
         context: context,
         builder: (BuildContext context) {
@@ -206,7 +202,6 @@ class _TablesScreenState extends State<TablesScreen> {
 
       _showSuccess('⏳ Réservation en cours...');
 
-      // 1. Mettre à jour le statut de la table dans la BD
       final statusResponse = await ApiService.updateTableStatus(
         table.id,
         'reserved',
@@ -217,7 +212,6 @@ class _TablesScreenState extends State<TablesScreen> {
         return false;
       }
 
-      // 2. Créer la réservation
       final totalPrice = (table.pricePerHour ?? 0) * reservationDuration;
       final reservationData = {
         "user": {"id": userId},
@@ -238,17 +232,14 @@ class _TablesScreenState extends State<TablesScreen> {
 
       if (reservationResponse.statusCode == 201) {
         _showSuccess('✅ Table ${table.tableNumber} réservée avec succès!');
-        // Recharger les tables
         await _loadTables();
         return true;
       } else {
-        // Si la création échoue, remettre la table disponible
         await ApiService.updateTableStatus(table.id, 'available');
         _showError('Erreur lors de la création de la réservation');
         return false;
       }
     } catch (e) {
-      // En cas d'erreur, essayer de remettre la table disponible
       try {
         await ApiService.updateTableStatus(table.id, 'available');
       } catch (_) {}
@@ -313,7 +304,6 @@ class _TablesScreenState extends State<TablesScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Nouvelle action : ouvrir le sélecteur de date (agenda) depuis la barre d'app
           IconButton(
             icon: Icon(Icons.calendar_today),
             tooltip: 'Choisir une date',
@@ -354,131 +344,147 @@ class _TablesScreenState extends State<TablesScreen> {
                   ],
                 ),
               )
-              : Column(
-                children: [
-                  // Filtres
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    color: Colors.grey[50],
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children:
-                            [
-                                  'Toutes',
-                                  'Disponibles',
-                                  'Indoor',
-                                  'Outdoor',
-                                  'VIP',
-                                ]
-                                .map(
-                                  (filter) => Container(
-                                    margin: EdgeInsets.only(right: 8),
-                                    child: FilterChip(
-                                      label: Text(filter),
-                                      selected: _selectedFilter == filter,
-                                      onSelected:
-                                          (selected) => _filterTables(filter),
-                                      backgroundColor: Colors.white,
-                                      selectedColor: Colors.blue,
-                                      checkmarkColor: Colors.white,
-                                      labelStyle: TextStyle(
-                                        color:
-                                            _selectedFilter == filter
-                                                ? Colors.white
-                                                : Colors.grey[700],
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                      ),
-                    ),
-                  ),
-                  // Compteur
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  color: Colors.white,
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${_filteredTables.length} table${_filteredTables.length > 1 ? 's' : ''} trouvée${_filteredTables.length > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(width: 8),
                         Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${_tables.where((t) => t.status == 'available').length} disponible${_tables.where((t) => t.status == 'available').length > 1 ? 's' : ''}',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          padding: EdgeInsets.all(16),
+                          color: Colors.grey[50],
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children:
+                                  [
+                                        'Toutes',
+                                        'Disponibles',
+                                        'Indoor',
+                                        'Outdoor',
+                                        'VIP',
+                                      ]
+                                      .map(
+                                        (filter) => Container(
+                                          margin: EdgeInsets.only(right: 8),
+                                          child: FilterChip(
+                                            label: Text(filter),
+                                            selected: _selectedFilter == filter,
+                                            onSelected:
+                                                (selected) =>
+                                                    _filterTables(filter),
+                                            backgroundColor: Colors.white,
+                                            selectedColor: Colors.blue,
+                                            checkmarkColor: Colors.white,
+                                            labelStyle: TextStyle(
+                                              color:
+                                                  _selectedFilter == filter
+                                                      ? Colors.white
+                                                      : Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                             ),
                           ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${_filteredTables.length} table${_filteredTables.length > 1 ? 's' : ''} trouvée${_filteredTables.length > 1 ? 's' : ''}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${_tables.where((t) => t.status == 'available').length} disponible${_tables.where((t) => t.status == 'available').length > 1 ? 's' : ''}',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child:
+                              _filteredTables.isEmpty
+                                  ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.table_restaurant_outlined,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          'Aucune table trouvée',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.grey[600],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Essayez de changer les filtres',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  : RefreshIndicator(
+                                    onRefresh: _loadTables,
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.only(bottom: 16),
+                                      itemCount: _filteredTables.length,
+                                      itemBuilder: (context, index) {
+                                        final table = _filteredTables[index];
+                                        return _buildTableCard(table);
+                                      },
+                                    ),
+                                  ),
                         ),
                       ],
                     ),
                   ),
-                  // Liste des tables
-                  Expanded(
-                    child:
-                        _filteredTables.isEmpty
-                            ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.table_restaurant_outlined,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Aucune table trouvée',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Essayez de changer les filtres',
-                                    style: TextStyle(color: Colors.grey[500]),
-                                  ),
-                                ],
-                              ),
-                            )
-                            : RefreshIndicator(
-                              onRefresh: _loadTables,
-                              child: ListView.builder(
-                                padding: EdgeInsets.only(bottom: 16),
-                                itemCount: _filteredTables.length,
-                                itemBuilder: (context, index) {
-                                  final table = _filteredTables[index];
-                                  return _buildTableCard(table);
-                                },
-                              ),
-                            ),
-                  ),
-                ],
+                ),
               ),
     );
   }
 
   Widget _buildTableCard(RestaurantTable table) {
-    bool isAvailable = table.status == 'available';
+    final color = _getStatusColor(table.status);
+    final imagePath = ImageUtils.getTableImage(
+      table.tableType,
+      imageUrl: table.imageUrl,
+    );
 
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -491,22 +497,8 @@ class _TablesScreenState extends State<TablesScreen> {
           padding: EdgeInsets.all(16),
           child: Row(
             children: [
-              // Icon de la table
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: _getStatusColor(table.status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.table_restaurant,
-                  color: _getStatusColor(table.status),
-                  size: 30,
-                ),
-              ),
+              _buildTableImagePreview(table, imagePath, color),
               SizedBox(width: 16),
-              // Informations de la table
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,20 +543,17 @@ class _TablesScreenState extends State<TablesScreen> {
                   ],
                 ),
               ),
-              // Statut
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(table.status).withOpacity(0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _getStatusColor(table.status).withOpacity(0.3),
-                  ),
+                  border: Border.all(color: color.withOpacity(0.3)),
                 ),
                 child: Text(
                   _getStatusText(table.status),
                   style: TextStyle(
-                    color: _getStatusColor(table.status),
+                    color: color,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -576,9 +565,39 @@ class _TablesScreenState extends State<TablesScreen> {
       ),
     );
   }
+
+  Widget _buildTableImagePreview(
+    RestaurantTable table,
+    String imagePath,
+    Color color,
+  ) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          imagePath,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: color.withOpacity(0.1),
+              child: Icon(Icons.table_restaurant, color: color, size: 30),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
-// Widget séparé pour la modal de détails de table
 class TableDetailsModal extends StatefulWidget {
   final RestaurantTable table;
   final DateTime selectedDate;
@@ -676,7 +695,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
               Center(
                 child: Container(
                   margin: EdgeInsets.only(top: 10, bottom: 10),
@@ -702,7 +720,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
               _buildTableImage(widget.table),
               SizedBox(height: 20),
 
-              // Date/Time selection
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -723,7 +740,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
                     ),
                     SizedBox(height: 16),
 
-                    // Sélection de la date
                     _buildDateTimeRow(
                       'Date',
                       '${_modalDate.day}/${_modalDate.month}/${_modalDate.year}',
@@ -739,7 +755,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
                     ),
                     SizedBox(height: 12),
 
-                    // Sélection de l'heure
                     _buildDateTimeRow(
                       'Heure',
                       '${_modalTime.hour.toString().padLeft(2, '0')}:${_modalTime.minute.toString().padLeft(2, '0')}',
@@ -755,7 +770,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
                     ),
                     SizedBox(height: 12),
 
-                    // Sélection de la durée
                     _buildDurationSelection(),
                   ],
                 ),
@@ -765,7 +779,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
               _buildDetailSection(totalPrice),
               SizedBox(height: 20),
 
-              // Action buttons
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -785,12 +798,6 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
                             }
                           }
                           : null,
-                  child: Text(
-                    widget.table.status == 'available'
-                        ? 'Réserver cette table'
-                        : 'Indisponible',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         widget.table.status == 'available'
@@ -801,6 +808,12 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 2,
+                  ),
+                  child: Text(
+                    widget.table.status == 'available'
+                        ? 'Réserver cette table'
+                        : 'Indisponible',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -908,40 +921,100 @@ class _TableDetailsModalState extends State<TableDetailsModal> {
 
   Widget _buildTableImage(RestaurantTable table) {
     final color = widget.getTableColor(table.tableType);
+    final imagePath = ImageUtils.getTableImage(
+      table.tableType,
+      imageUrl: table.imageUrl,
+    );
+
     return Container(
-      height: 150,
+      height: 200,
       width: double.infinity,
-      decoration: BoxDecoration(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        color: color,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.7), color.withOpacity(0.9)],
+        child: Stack(
+          children: [
+            Image.asset(
+              imagePath,
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: color,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.table_restaurant,
+                        size: 60,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Table ${table.tableNumber}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Table ${table.tableNumber}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        widget.capitalize(table.tableType ?? 'Standard'),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (table.locationDescription != null &&
+                          table.locationDescription!.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            table.locationDescription!,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.table_restaurant, size: 50, color: Colors.white),
-          SizedBox(height: 8),
-          Text(
-            'Table ${table.tableNumber}',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            widget.capitalize(table.tableType ?? 'Standard'),
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }

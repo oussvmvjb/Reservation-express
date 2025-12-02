@@ -135,7 +135,6 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
               _buildDetailRow('Table', 'Table ${order.tableId}'),
               const SizedBox(height: 16),
 
-              // CORRECTION : Utiliser itemsSummary au lieu de Order qui n'existe pas
               if (order.itemsSummary != null &&
                   order.itemsSummary!.isNotEmpty) ...[
                 const Text(
@@ -143,7 +142,6 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                // Afficher le résumé des articles
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(order.itemsSummary!),
@@ -156,7 +154,6 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                // Vous pouvez parser le JSON ici si nécessaire
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text('Contenu JSON des articles'),
@@ -210,42 +207,59 @@ class _MesCommandesScreenState extends State<MesCommandesScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadOrders),
         ],
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _orders.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: Colors.white,
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _orders.isEmpty
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Aucune commande trouvée',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Vos commandes apparaîtront ici',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    : RefreshIndicator(
+                      onRefresh: _loadOrders,
+                      child: ListView.builder(
+                        itemCount: _orders.length,
+                        itemBuilder: (context, index) {
+                          final order = _orders[index];
+                          return _buildOrderCard(order);
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Aucune commande trouvée',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Vos commandes apparaîtront ici',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              )
-              : RefreshIndicator(
-                onRefresh: _loadOrders,
-                child: ListView.builder(
-                  itemCount: _orders.length,
-                  itemBuilder: (context, index) {
-                    final order = _orders[index];
-                    return _buildOrderCard(order);
-                  },
-                ),
-              ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

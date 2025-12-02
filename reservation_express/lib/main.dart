@@ -5,7 +5,7 @@ import 'screens/home_screen.dart';
 import 'screens/tables_screen.dart';
 import 'screens/reservations_screen.dart';
 import 'screens/menu_screen.dart';
-import 'screens/mescommandes.dart'; // IMPORT AJOUTÉ
+import 'screens/mescommandes.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
         fontFamily: 'Roboto',
+        scaffoldBackgroundColor: const Color.fromARGB(255, 151, 88, 5),
       ),
       home: LoginScreen(),
       routes: {
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
         '/tables': (context) => TablesScreen(),
         '/reservations': (context) => ReservationsScreen(),
         '/menu': (context) => MenuScreen(),
-        '/mes-commandes': (context) => MesCommandesScreen(), // ROUTE AJOUTÉE
+        '/mes-commandes': (context) => MesCommandesScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

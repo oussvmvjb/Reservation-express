@@ -6,7 +6,6 @@ class AuthService {
   static const String _userNameKey = 'user_name';
   static const String _userPhoneKey = 'user_phone';
 
-  // Sauvegarder les données utilisateur
   static Future<void> saveUserData(
     int userId,
     String email,
@@ -20,31 +19,26 @@ class AuthService {
     await prefs.setString(_userPhoneKey, phone);
   }
 
-  // Récupérer l'ID utilisateur
   static Future<int?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_userIdKey);
   }
 
-  // Récupérer l'email utilisateur
   static Future<String?> getUserEmail() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userEmailKey);
   }
 
-  // Récupérer le nom utilisateur
   static Future<String?> getUserName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userNameKey);
   }
 
-  // Récupérer le téléphone utilisateur
   static Future<String?> getUserPhone() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userPhoneKey);
   }
 
-  // Récupérer toutes les données utilisateur
   static Future<Map<String, dynamic>> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -55,7 +49,6 @@ class AuthService {
     };
   }
 
-  // Déconnexion
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
@@ -64,25 +57,22 @@ class AuthService {
     await prefs.remove(_userPhoneKey);
   }
 
-  // Vérifier si l'utilisateur est connecté
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(_userIdKey) && prefs.getInt(_userIdKey) != null;
   }
 
-  // Vérifier la validité de la session
   static Future<bool> isValidSession() async {
     if (!await isLoggedIn()) {
       return false;
     }
-    
+
     final userId = await getUserId();
     final userEmail = await getUserEmail();
-    
+
     return userId != null && userEmail != null && userEmail.isNotEmpty;
   }
 
-  // Nettoyer les données utilisateur (en cas de corruption)
   static Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

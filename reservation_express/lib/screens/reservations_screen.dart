@@ -35,10 +35,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       if (userId != null) {
         print('🔄 Chargement des réservations pour l\'utilisateur: $userId');
         final reservations = await ApiService.getUserReservations(userId);
-        
-        // Charger les tables manquantes si nécessaire
+
         await _loadMissingTables(reservations);
-        
+
         setState(() {
           _reservations = reservations;
           _isLoading = false;
@@ -64,14 +63,18 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
   Future<void> _loadMissingTables(List<Reservation> reservations) async {
     print('🔄 Vérification des tables manquantes...');
-    
+
     for (var reservation in reservations) {
       if (reservation.table == null) {
-        print('📦 Table manquante pour la réservation ${reservation.id}, tableId: ${reservation.tableId}');
-        
+        print(
+          '📦 Table manquante pour la réservation ${reservation.id}, tableId: ${reservation.tableId}',
+        );
+
         if (!_tableCache.containsKey(reservation.tableId)) {
           try {
-            print('🌐 Chargement de la table ${reservation.tableId} depuis l\'API...');
+            print(
+              '🌐 Chargement de la table ${reservation.tableId} depuis l\'API...',
+            );
             final table = await ApiService.getTableById(reservation.tableId);
             if (table != null) {
               _tableCache[reservation.tableId] = table;
@@ -80,7 +83,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               print('❌ Table ${reservation.tableId} non trouvée');
             }
           } catch (e) {
-            print('❌ Erreur lors du chargement de la table ${reservation.tableId}: $e');
+            print(
+              '❌ Erreur lors du chargement de la table ${reservation.tableId}: $e',
+            );
           }
         }
       }
@@ -107,73 +112,80 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
-
-
-Future<void> _cancelReservation(int reservationId, int tableId) async {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Supprimer la réservation'),
-        content: Text(
-          'Êtes-vous sûr de vouloir SUPPRIMER cette réservation ?\n\n'
-          '⚠️ Cette action est irréversible !\n'
-          'La réservation sera effacée et la table remise disponible.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Non, garder'),
+  Future<void> _cancelReservation(int reservationId, int tableId) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Supprimer la réservation'),
+          content: Text(
+            'Êtes-vous sûr de vouloir SUPPRIMER cette réservation ?\n\n'
+            '⚠️ Cette action est irréversible !\n'
+            'La réservation sera effacée et la table remise disponible.',
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              _showSuccess('⏳ Suppression en cours...');
-              
-              try {
-                // Supprimer complètement la réservation
-                final deleteResponse = await ApiService.deleteReservation(reservationId);
-                
-                if (deleteResponse.statusCode == 200) {
-                  print('✅ Réservation $reservationId supprimée');
-                  
-                  // Remettre la table disponible
-                  try {
-                    final statusResponse = await ApiService.updateTableStatus(tableId, 'available');
-                    
-                    if (statusResponse.statusCode == 200) {
-                      print('✅ Table $tableId remise disponible');
-                      _showSuccess('✅ Réservation supprimée et table remise disponible');
-                    } else {
-                      print('⚠️ Réservation supprimée mais erreur table: ${statusResponse.statusCode}');
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Non, garder'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                _showSuccess('⏳ Suppression en cours...');
+
+                try {
+                  final deleteResponse = await ApiService.deleteReservation(
+                    reservationId,
+                  );
+
+                  if (deleteResponse.statusCode == 200) {
+                    print('✅ Réservation $reservationId supprimée');
+
+                    try {
+                      final statusResponse = await ApiService.updateTableStatus(
+                        tableId,
+                        'available',
+                      );
+
+                      if (statusResponse.statusCode == 200) {
+                        print('✅ Table $tableId remise disponible');
+                        _showSuccess(
+                          '✅ Réservation supprimée et table remise disponible',
+                        );
+                      } else {
+                        print(
+                          '⚠️ Réservation supprimée mais erreur table: ${statusResponse.statusCode}',
+                        );
+                        _showSuccess('✅ Réservation supprimée');
+                      }
+                    } catch (tableError) {
+                      print(
+                        '⚠️ Réservation supprimée mais erreur table: $tableError',
+                      );
                       _showSuccess('✅ Réservation supprimée');
                     }
-                  } catch (tableError) {
-                    print('⚠️ Réservation supprimée mais erreur table: $tableError');
-                    _showSuccess('✅ Réservation supprimée');
+
+                    await _loadReservations();
+                  } else {
+                    _showError(
+                      '❌ Échec de la suppression: ${deleteResponse.statusCode}',
+                    );
                   }
-                  
-                  // Recharger les données
-                  await _loadReservations();
-                  
-                } else {
-                  _showError('❌ Échec de la suppression: ${deleteResponse.statusCode}');
+                } catch (error) {
+                  print('❌ Erreur suppression réservation: $error');
+                  _showError('Erreur lors de la suppression: $error');
                 }
-                
-              } catch (error) {
-                print('❌ Erreur suppression réservation: $error');
-                _showError('Erreur lors de la suppression: $error');
-              }
-            },
-            child: Text('Oui, supprimer', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-
+              },
+              child: Text(
+                'Oui, supprimer',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _navigateToTables() {
     Navigator.pushNamed(context, '/tables').then((_) {
@@ -182,16 +194,14 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
   }
 
   RestaurantTable? _getTableForReservation(Reservation reservation) {
-    // Priorité 1: Table directement dans la réservation
     if (reservation.table != null) {
       return reservation.table;
     }
-    
-    // Priorité 2: Table depuis le cache
+
     if (_tableCache.containsKey(reservation.tableId)) {
       return _tableCache[reservation.tableId];
     }
-    
+
     return null;
   }
 
@@ -210,10 +220,7 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
       appBar: AppBar(
         title: Text(
           'Mes Réservations',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
@@ -226,13 +233,24 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
           ),
         ],
       ),
-      body: _isLoading
-          ? _buildLoadingState()
-          : _hasError
-              ? _buildErrorState()
-              : _reservations.isEmpty
-                  ? _buildEmptyState()
-                  : _buildReservationsList(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: Colors.white,
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child:
+                _isLoading
+                    ? _buildLoadingState()
+                    : _hasError
+                    ? _buildErrorState()
+                    : _reservations.isEmpty
+                    ? _buildEmptyState()
+                    : _buildReservationsList(),
+          ),
+        ),
+      ),
     );
   }
 
@@ -257,11 +275,7 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 80,
-            color: Colors.red,
-          ),
+          Icon(Icons.error_outline, size: 80, color: Colors.red),
           SizedBox(height: 16),
           Text(
             'Erreur de chargement',
@@ -276,10 +290,7 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
             padding: EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               _errorMessage,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ),
@@ -302,11 +313,7 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.calendar_today,
-            size: 100,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.calendar_today, size: 100, color: Colors.grey[400]),
           SizedBox(height: 20),
           Text(
             'Aucune réservation',
@@ -319,19 +326,12 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
           SizedBox(height: 12),
           Text(
             'Vous n\'avez pas encore de réservation.\nRéservez votre première table dès maintenant!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 30),
           ElevatedButton(
             onPressed: _navigateToTables,
-            child: Text(
-              'Voir les tables disponibles',
-              style: TextStyle(fontSize: 16),
-            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -339,6 +339,10 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+            ),
+            child: Text(
+              'Voir les tables disponibles',
+              style: TextStyle(fontSize: 16),
             ),
           ),
         ],
@@ -362,19 +366,16 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
 
   Widget _buildReservationCard(Reservation reservation) {
     final table = _getTableForReservation(reservation);
-    
+
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // En-tête avec numéro de table et statut
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -407,7 +408,9 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
                     color: _getStatusColor(reservation.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _getStatusColor(reservation.status).withOpacity(0.3),
+                      color: _getStatusColor(
+                        reservation.status,
+                      ).withOpacity(0.3),
                     ),
                   ),
                   child: Text(
@@ -422,46 +425,74 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
               ],
             ),
             SizedBox(height: 12),
-            
-            // Détails de la réservation
-            _buildDetailRow(Icons.calendar_today, 'Date', reservation.getFormattedDate()),
-            _buildDetailRow(Icons.access_time, 'Heure', reservation.getFormattedTime()),
-            _buildDetailRow(Icons.timer, 'Durée', '${reservation.durationHours} heure(s)'),
-            _buildDetailRow(Icons.people, 'Personnes', '${reservation.numberOfGuests}'),
-            _buildDetailRow(Icons.attach_money, 'Prix total', '${reservation.totalPrice.toStringAsFixed(2)}€'),
-            
-            // Informations sur la table si disponibles
+
+            _buildDetailRow(
+              Icons.calendar_today,
+              'Date',
+              reservation.getFormattedDate(),
+            ),
+            _buildDetailRow(
+              Icons.access_time,
+              'Heure',
+              reservation.getFormattedTime(),
+            ),
+            _buildDetailRow(
+              Icons.timer,
+              'Durée',
+              '${reservation.durationHours} heure(s)',
+            ),
+            _buildDetailRow(
+              Icons.people,
+              'Personnes',
+              '${reservation.numberOfGuests}',
+            ),
+            _buildDetailRow(
+              Icons.attach_money,
+              'Prix total',
+              '${reservation.totalPrice.toStringAsFixed(2)}€',
+            ),
+
             if (table != null) ...[
-              _buildDetailRow(Icons.chair, 'Capacité', '${table.capacity} personnes'),
+              _buildDetailRow(
+                Icons.chair,
+                'Capacité',
+                '${table.capacity} personnes',
+              ),
               if (table.tableType != null && table.tableType!.isNotEmpty)
                 _buildDetailRow(Icons.category, 'Type', table.tableType!),
             ],
-            
-            // Demandes spéciales (si présentes)
-            if (reservation.specialRequests != null && reservation.specialRequests!.isNotEmpty)
-              _buildDetailRow(Icons.note, 'Demandes spéciales', reservation.specialRequests!),
-            
+
+            if (reservation.specialRequests != null &&
+                reservation.specialRequests!.isNotEmpty)
+              _buildDetailRow(
+                Icons.note,
+                'Demandes spéciales',
+                reservation.specialRequests!,
+              ),
+
             SizedBox(height: 16),
-            
-            // Bouton d'annulation (seulement pour les réservations confirmées)
-            // CORRECTION : Ajout du tableId dans l'appel
+
             if (reservation.status == 'confirmed')
               SizedBox(
                 width: double.infinity,
                 height: 45,
                 child: OutlinedButton(
-                  onPressed: () => _cancelReservation(reservation.id, reservation.tableId),
+                  onPressed:
+                      () => _cancelReservation(
+                        reservation.id,
+                        reservation.tableId,
+                      ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   child: Text(
                     'Annuler la réservation',
                     style: TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
@@ -477,11 +508,7 @@ Future<void> _cancelReservation(int reservationId, int tableId) async {
       margin: EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Colors.grey[600],
-          ),
+          Icon(icon, size: 20, color: Colors.grey[600]),
           SizedBox(width: 12),
           Expanded(
             child: Column(

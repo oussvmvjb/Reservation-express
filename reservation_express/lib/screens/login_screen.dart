@@ -30,8 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final userData = json.decode(response.body);
-        
-        // Sauvegarder les données utilisateur
+
         await AuthService.saveUserData(
           userData['id'],
           userData['email'],
@@ -75,115 +74,116 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Bouton retour
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back, color: Colors.blue),
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
-              ),
-              
-              SizedBox(height: 20),
-              
-              // Titre
-              Text(
-                'Content de vous revoir!',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[800],
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Connectez-vous à votre compte',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
-              
-              SizedBox(height: 40),
-              
-              // Formulaire
-              _buildEmailField(),
-              SizedBox(height: 20),
-              _buildPasswordField(),
-              SizedBox(height: 30),
-              
-              // Bouton de connexion
-              _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _login,
-                        child: Text(
-                          'Se connecter',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+      appBar: AppBar(title: Text('Login'), backgroundColor: Colors.blue),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: Colors.white,
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back, color: Colors.blue),
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    'Content de vous revoir!',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Connectez-vous à votre compte',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+
+                  SizedBox(height: 40),
+
+                  _buildEmailField(),
+                  SizedBox(height: 20),
+                  _buildPasswordField(),
+                  SizedBox(height: 30),
+
+                  _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
                           ),
-                          elevation: 2,
+                          child: Text(
+                            'Se connecter',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                  SizedBox(height: 30),
+
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'Ou',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                    ],
+                  ),
+
+                  SizedBox(height: 30),
+
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      child: RichText(
+                        text: TextSpan(
+                          text: 'Nouveau chez nous? ',
+                          style: TextStyle(color: Colors.grey[600]),
+                          children: [
+                            TextSpan(
+                              text: 'Créer un compte',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-              
-              SizedBox(height: 30),
-              
-              // Ligne séparatrice
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Ou',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
                   ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
                 ],
               ),
-              
-              SizedBox(height: 30),
-              
-              // Lien vers inscription
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/register');
-                  },
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Nouveau chez nous? ',
-                      style: TextStyle(color: Colors.grey[600]),
-                      children: [
-                        TextSpan(
-                          text: 'Créer un compte',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -213,7 +213,10 @@ class _LoginScreenState extends State<LoginScreen> {
             decoration: InputDecoration(
               hintText: 'votre@email.com',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.email, color: Colors.grey[500]),
             ),
             keyboardType: TextInputType.emailAddress,
@@ -247,7 +250,10 @@ class _LoginScreenState extends State<LoginScreen> {
             decoration: InputDecoration(
               hintText: 'Entrez votre mot de passe',
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               prefixIcon: Icon(Icons.lock, color: Colors.grey[500]),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -270,15 +276,11 @@ class _LoginScreenState extends State<LoginScreen> {
           alignment: Alignment.centerRight,
           child: GestureDetector(
             onTap: () {
-              // Mot de passe oublié
               _showError('Fonctionnalité à venir');
             },
             child: Text(
               'Mot de passe oublié?',
-              style: TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
             ),
           ),
         ),

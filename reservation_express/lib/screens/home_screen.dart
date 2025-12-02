@@ -3,7 +3,7 @@ import '../services/auth_service.dart';
 import 'tables_screen.dart';
 import 'reservations_screen.dart';
 import 'menu_screen.dart';
-import 'mescommandes.dart'; // AJOUTER CET IMPORT
+import 'mescommandes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -77,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // En-tête utilisateur
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -87,7 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.blue,
                       child: Text(
                         _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     SizedBox(width: 16),
@@ -97,7 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             'Bonjour, $_userName!',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             _userEmail,
@@ -112,14 +117,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 24),
 
-            // Titre des services
             Text(
               'Nos Services',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
 
-            // Grille des services
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -146,7 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ReservationsScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => ReservationsScreen(),
+                        ),
                       );
                     },
                   ),
@@ -168,10 +173,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     subtitle: 'Historique des commandes',
                     color: Colors.purple,
                     onTap: () {
-                      // CORRECTION : Naviguer vers MesCommandesScreen
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => MesCommandesScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => MesCommandesScreen(),
+                        ),
                       );
                     },
                   ),
@@ -233,10 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
             ],

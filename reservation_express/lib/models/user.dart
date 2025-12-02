@@ -13,7 +13,6 @@ class User {
     required this.phoneNumber,
   });
 
-  // Conversion de l'objet User en Map pour JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -24,7 +23,6 @@ class User {
     };
   }
 
-  // Création d'un User à partir d'un Map (JSON)
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],

@@ -19,7 +19,6 @@ class MenuItem {
     this.preparationTime,
   });
 
-  // Conversion de l'objet MenuItem en Map pour JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -33,7 +32,6 @@ class MenuItem {
     };
   }
 
-  // Création d'un MenuItem à partir d'un Map (JSON)
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
       id: json['id'],

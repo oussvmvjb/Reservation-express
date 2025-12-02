@@ -7,8 +7,8 @@ import 'package:reservation_express/models/RestaurantTable.dart';
 import 'package:reservation_express/models/user.dart';
 
 class ApiService {
- static const String baseUrl = 'http://localhost:8080/api'; // Pour iOS/Web
-//static const String baseUrl = 'http://10.0.2.2:8080/api';
+  static const String baseUrl = 'http://localhost:8080/api';
+  //static const String baseUrl = 'http://10.0.2.2:8080/api';
 
   // Headers communs
   static Map<String, String> get headers => {
@@ -18,7 +18,6 @@ class ApiService {
 
   // ========== AUTHENTIFICATION ==========
 
-  /// Inscription d'un nouvel utilisateur
   static Future<http.Response> register(User user) async {
     try {
       final response = await http.post(
@@ -37,16 +36,12 @@ class ApiService {
     }
   }
 
-  /// Connexion d'un utilisateur
   static Future<http.Response> login(String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: headers,
-        body: json.encode({
-          'email': email,
-          'password': password,
-        }),
+        body: json.encode({'email': email, 'password': password}),
       );
       return response;
     } catch (e) {
@@ -54,14 +49,13 @@ class ApiService {
     }
   }
 
-  /// Vérifier si un email existe déjà
   static Future<bool> checkEmailExists(String email) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/auth/check-email/$email'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['exists'] ?? false;
@@ -72,7 +66,6 @@ class ApiService {
     }
   }
 
-  /// Vérifier la santé de l'API
   static Future<bool> checkApiHealth() async {
     try {
       final response = await http.get(
@@ -93,12 +86,14 @@ class ApiService {
         Uri.parse('$baseUrl/tables'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => RestaurantTable.fromJson(json)).toList();
       } else {
-        throw Exception('Échec du chargement des tables: ${response.statusCode}');
+        throw Exception(
+          'Échec du chargement des tables: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Erreur réseau: $e');
@@ -111,46 +106,52 @@ class ApiService {
         Uri.parse('$baseUrl/tables/available'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => RestaurantTable.fromJson(json)).toList();
       } else {
-        throw Exception('Échec du chargement des tables disponibles: ${response.statusCode}');
+        throw Exception(
+          'Échec du chargement des tables disponibles: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Erreur réseau: $e');
     }
   }
-// Dans ApiService.dart - AJOUTEZ CETTE MÉTHODE
-static Future<http.Response> updateTableStatus(int tableId, String newStatus) async {
-  try {
-    final response = await http.put(
-      Uri.parse('$baseUrl/tables/$tableId/status'),
-      headers: headers,
-      body: json.encode({
-        'status': newStatus,
-      }),
-    );
-    return response;
-  } catch (e) {
-    throw Exception('Erreur de mise à jour du statut de la table: $e');
+
+  static Future<http.Response> updateTableStatus(
+    int tableId,
+    String newStatus,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/tables/$tableId/status'),
+        headers: headers,
+        body: json.encode({'status': newStatus}),
+      );
+      return response;
+    } catch (e) {
+      throw Exception('Erreur de mise à jour du statut de la table: $e');
+    }
   }
-}
+
   static Future<RestaurantTable?> getTableById(int id) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/tables/$id'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return RestaurantTable.fromJson(data);
       } else if (response.statusCode == 404) {
         return null;
       } else {
-        throw Exception('Échec du chargement de la table: ${response.statusCode}');
+        throw Exception(
+          'Échec du chargement de la table: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Erreur réseau: $e');
@@ -159,51 +160,54 @@ static Future<http.Response> updateTableStatus(int tableId, String newStatus) as
 
   // ========== RÉSERVATIONS ==========
 
-// Dans ApiService.dart - CORRECTION de createReservation
-static Future<http.Response> createReservation(Map<String, dynamic> reservationData) async {
-  try {
-    // Assurez-vous que totalPrice est un nombre (double ou int)
-    final formattedData = {
-      ...reservationData,
-      'totalPrice': reservationData['totalPrice'] is double 
-          ? reservationData['totalPrice'] 
-          : (reservationData['totalPrice'] as num).toDouble(),
-    };
-    
-    print('Envoi de la réservation avec totalPrice: ${formattedData['totalPrice']}'); // Debug
-    
-    return await http.post(
-      Uri.parse('$baseUrl/reservations'),
-      headers: headers,
-      body: json.encode(formattedData),
-    );
-  } catch (e) {
-    throw Exception('Erreur de création de réservation: $e');
-  }
-}
+  static Future<http.Response> createReservation(
+    Map<String, dynamic> reservationData,
+  ) async {
+    try {
+      final formattedData = {
+        ...reservationData,
+        'totalPrice':
+            reservationData['totalPrice'] is double
+                ? reservationData['totalPrice']
+                : (reservationData['totalPrice'] as num).toDouble(),
+      };
 
-static Future<List<Reservation>> getUserReservations(int userId) async {
-  try {
-    print('🌐 Appel API: $baseUrl/reservations/user/$userId');
-    
-    final response = await http.get(
-      Uri.parse('$baseUrl/reservations/user/$userId'),
-      headers: headers,
-    );
-    
-    print('📡 Réponse API - Status: ${response.statusCode}');
-    print('📡 Réponse API - Body: ${response.body}');
-    
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      print('✅ ${data.length} réservations reçues de l\'API');
-      
-      List<Reservation> reservations = data.map((json) => Reservation.fromJson(json)).toList();
-      
-      // Debug détaillé
-      for (var i = 0; i < reservations.length; i++) {
-        final reservation = reservations[i];
-        print('''
+      print(
+        'Envoi de la réservation avec totalPrice: ${formattedData['totalPrice']}',
+      ); // Debug
+
+      return await http.post(
+        Uri.parse('$baseUrl/reservations'),
+        headers: headers,
+        body: json.encode(formattedData),
+      );
+    } catch (e) {
+      throw Exception('Erreur de création de réservation: $e');
+    }
+  }
+
+  static Future<List<Reservation>> getUserReservations(int userId) async {
+    try {
+      print('🌐 Appel API: $baseUrl/reservations/user/$userId');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/reservations/user/$userId'),
+        headers: headers,
+      );
+
+      print('📡 Réponse API - Status: ${response.statusCode}');
+      print('📡 Réponse API - Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        print('✅ ${data.length} réservations reçues de l\'API');
+
+        List<Reservation> reservations =
+            data.map((json) => Reservation.fromJson(json)).toList();
+
+        for (var i = 0; i < reservations.length; i++) {
+          final reservation = reservations[i];
+          print('''
 📋 Réservation ${i + 1}:
    - ID: ${reservation.id}
    - User ID: ${reservation.userId}
@@ -214,63 +218,73 @@ static Future<List<Reservation>> getUserReservations(int userId) async {
    - Heure: ${reservation.reservationTime}
    - Statut: ${reservation.status}
 ''');
-      }
-      
-      return reservations;
-    } else {
-      throw Exception('Échec du chargement des réservations: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('❌ Erreur réseau lors du chargement des réservations: $e');
-    throw Exception('Erreur réseau: $e');
-  }
-}
-static Future<http.Response> deleteReservation(int reservationId) async {
-  try {
-    print('🗑️ Suppression de la réservation ID: $reservationId');
-    
-    final response = await http.delete(
-      Uri.parse('$baseUrl/reservations/$reservationId'),
-      headers: headers,
-    );
-    
-    print('📡 Réponse suppression - Status: ${response.statusCode}');
-    print('📡 Réponse suppression - Body: ${response.body}');
-    
-    return response;
-  } catch (e) {
-    print('❌ Erreur lors de la suppression de la réservation: $e');
-    throw Exception('Erreur de suppression de réservation: $e');
-  }
-}
-static Future<bool> deleteReservationAndUpdateTable(int reservationId, int tableId) async {
-  try {
-    print('🔄 Suppression de la réservation $reservationId et mise à jour de la table $tableId');
-    
-    // 1. Supprimer la réservation
-    final deleteResponse = await deleteReservation(reservationId);
-    
-    if (deleteResponse.statusCode == 200) {
-      print('✅ Réservation supprimée avec succès');
-      
-      // 2. Mettre à jour le statut de la table (remettre disponible)
-      final tableResponse = await updateTableStatus(tableId, 'available');
-      
-      if (tableResponse.statusCode == 200) {
-        print('✅ Table $tableId remise à disponible');
-        return true;
+        }
+
+        return reservations;
       } else {
-        print('⚠️ Réservation supprimée mais erreur sur la table: ${tableResponse.statusCode}');
-        return false;
+        throw Exception(
+          'Échec du chargement des réservations: ${response.statusCode}',
+        );
       }
+    } catch (e) {
+      print('❌ Erreur réseau lors du chargement des réservations: $e');
+      throw Exception('Erreur réseau: $e');
     }
-    
-    return false;
-  } catch (e) {
-    print('❌ Erreur lors de la suppression combinée: $e');
-    return false;
   }
-}
+
+  static Future<http.Response> deleteReservation(int reservationId) async {
+    try {
+      print('🗑️ Suppression de la réservation ID: $reservationId');
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/reservations/$reservationId'),
+        headers: headers,
+      );
+
+      print('📡 Réponse suppression - Status: ${response.statusCode}');
+      print('📡 Réponse suppression - Body: ${response.body}');
+
+      return response;
+    } catch (e) {
+      print('❌ Erreur lors de la suppression de la réservation: $e');
+      throw Exception('Erreur de suppression de réservation: $e');
+    }
+  }
+
+  static Future<bool> deleteReservationAndUpdateTable(
+    int reservationId,
+    int tableId,
+  ) async {
+    try {
+      print(
+        '🔄 Suppression de la réservation $reservationId et mise à jour de la table $tableId',
+      );
+
+      final deleteResponse = await deleteReservation(reservationId);
+
+      if (deleteResponse.statusCode == 200) {
+        print('✅ Réservation supprimée avec succès');
+
+        final tableResponse = await updateTableStatus(tableId, 'available');
+
+        if (tableResponse.statusCode == 200) {
+          print('✅ Table $tableId remise à disponible');
+          return true;
+        } else {
+          print(
+            '⚠️ Réservation supprimée mais erreur sur la table: ${tableResponse.statusCode}',
+          );
+          return false;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('❌ Erreur lors de la suppression combinée: $e');
+      return false;
+    }
+  }
+
   static Future<http.Response> cancelReservation(int reservationId) async {
     try {
       return await http.put(
@@ -290,7 +304,7 @@ static Future<bool> deleteReservationAndUpdateTable(int reservationId, int table
         Uri.parse('$baseUrl/menu'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => MenuItem.fromJson(json)).toList();
@@ -308,12 +322,14 @@ static Future<bool> deleteReservationAndUpdateTable(int reservationId, int table
         Uri.parse('$baseUrl/menu/category/$category'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((json) => MenuItem.fromJson(json)).toList();
       } else {
-        throw Exception('Échec du chargement des articles: ${response.statusCode}');
+        throw Exception(
+          'Échec du chargement des articles: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Erreur réseau: $e');
@@ -326,92 +342,102 @@ static Future<bool> deleteReservationAndUpdateTable(int reservationId, int table
         Uri.parse('$baseUrl/menu/categories'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((category) => category.toString()).toList();
       } else {
-        throw Exception('Échec du chargement des catégories: ${response.statusCode}');
+        throw Exception(
+          'Échec du chargement des catégories: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Erreur réseau: $e');
     }
   }
 
-// ========== COMMANDES ==========
-static Future<http.Response> createOrder(Map<String, dynamic> orderData) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/orders'),
-      headers: headers,
-      body: json.encode(orderData),
-    );
-    return response;
-  } catch (e) {
-    throw Exception('Erreur de création de commande: $e');
-  }
-}
-
-static Future<List<Order>> getUserOrders(int userId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/orders/user/$userId'),
-      headers: headers,
-    );
-    
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((json) => Order.fromJson(json)).toList();
-    } else {
-      throw Exception('Échec du chargement des commandes: ${response.statusCode}');
+  static Future<http.Response> createOrder(
+    Map<String, dynamic> orderData,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders'),
+        headers: headers,
+        body: json.encode(orderData),
+      );
+      return response;
+    } catch (e) {
+      throw Exception('Erreur de création de commande: $e');
     }
-  } catch (e) {
-    throw Exception('Erreur réseau: $e');
   }
-}
 
-static Future<Order?> getOrderById(int orderId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/orders/$orderId'),
-      headers: headers,
-    );
-    
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return Order.fromJson(data);
-    } else if (response.statusCode == 404) {
-      return null;
-    } else {
-      throw Exception('Échec du chargement de la commande: ${response.statusCode}');
+  static Future<List<Order>> getUserOrders(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders/user/$userId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Order.fromJson(json)).toList();
+      } else {
+        throw Exception(
+          'Échec du chargement des commandes: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Erreur réseau: $e');
     }
-  } catch (e) {
-    throw Exception('Erreur réseau: $e');
   }
-}
 
-static Future<http.Response> updateOrderStatus(int orderId, String status) async {
-  try {
-    return await http.put(
-      Uri.parse('$baseUrl/orders/$orderId/status'),
-      headers: headers,
-      body: json.encode({'status': status}),
-    );
-  } catch (e) {
-    throw Exception('Erreur de mise à jour du statut: $e');
-  }
-}
+  static Future<Order?> getOrderById(int orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders/$orderId'),
+        headers: headers,
+      );
 
-static Future<http.Response> cancelOrder(int orderId) async {
-  try {
-    return await http.put(
-      Uri.parse('$baseUrl/orders/$orderId/cancel'),
-      headers: headers,
-    );
-  } catch (e) {
-    throw Exception('Erreur d\'annulation: $e');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return Order.fromJson(data);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception(
+          'Échec du chargement de la commande: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Erreur réseau: $e');
+    }
   }
-}
+
+  static Future<http.Response> updateOrderStatus(
+    int orderId,
+    String status,
+  ) async {
+    try {
+      return await http.put(
+        Uri.parse('$baseUrl/orders/$orderId/status'),
+        headers: headers,
+        body: json.encode({'status': status}),
+      );
+    } catch (e) {
+      throw Exception('Erreur de mise à jour du statut: $e');
+    }
+  }
+
+  static Future<http.Response> cancelOrder(int orderId) async {
+    try {
+      return await http.put(
+        Uri.parse('$baseUrl/orders/$orderId/cancel'),
+        headers: headers,
+      );
+    } catch (e) {
+      throw Exception('Erreur d\'annulation: $e');
+    }
+  }
 
   // ========== SANTÉ DE L'API ==========
 
@@ -421,7 +447,7 @@ static Future<http.Response> cancelOrder(int orderId) async {
         Uri.parse('$baseUrl/health'),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {

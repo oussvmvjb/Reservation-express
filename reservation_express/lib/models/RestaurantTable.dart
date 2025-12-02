@@ -22,8 +22,6 @@ class RestaurantTable {
   });
 
   factory RestaurantTable.fromJson(Map<String, dynamic> json) {
-    print('🔄 Parsing table JSON: $json'); // Debug
-
     double parsedPrice = 0.0;
     final priceRaw = json['pricePerHour'];
     if (priceRaw is num) {
