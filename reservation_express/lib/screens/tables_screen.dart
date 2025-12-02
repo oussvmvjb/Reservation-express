@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:reservation_express/models/Reservation.dart';
 import 'package:reservation_express/models/RestaurantTable.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
@@ -16,8 +15,6 @@ class _TablesScreenState extends State<TablesScreen> {
   List<RestaurantTable> _filteredTables = [];
   bool _isLoading = true;
   String _selectedFilter = 'Toutes';
-
-  // Variables pour la sélection de date et heure
   DateTime _selectedDate = DateTime.now().add(Duration(days: 1));
   TimeOfDay _selectedTime = TimeOfDay(hour: 19, minute: 0);
   int _selectedDuration = 2;
@@ -152,8 +149,7 @@ class _TablesScreenState extends State<TablesScreen> {
     );
   }
 
-  /// Réserve la table en utilisant des valeurs passées (locales de la modal)
-  /// Retourne true si la réservation a réussi.
+
   Future<bool> _reserveTable({
     required RestaurantTable table,
     required DateTime reservationDate,

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:reservation_express/models/MenuItem.dart';
-import 'package:reservation_express/models/Order.dart';
 import 'package:reservation_express/services/auth_service.dart';
 import '../services/api_service.dart';
-import 'dart:convert'; // Ajouter cette importation
+import 'dart:convert';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
