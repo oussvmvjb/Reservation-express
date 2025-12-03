@@ -110,22 +110,7 @@ class _TablesScreenState extends State<TablesScreen> {
     return picked;
   }
 
-  Future<TimeOfDay?> _selectTime(
-    BuildContext context, {
-    TimeOfDay? initialTime,
-  }) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime ?? _selectedTime,
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-    return picked;
-  }
+
 
   void _showTableDetails(RestaurantTable table) {
     showModalBottomSheet(
@@ -200,7 +185,7 @@ class _TablesScreenState extends State<TablesScreen> {
 
       if (confirm != true) return false;
 
-      _showSuccess('⏳ Réservation en cours...');
+      _showSuccess(' Réservation en cours...');
 
       final statusResponse = await ApiService.updateTableStatus(
         table.id,
@@ -231,7 +216,7 @@ class _TablesScreenState extends State<TablesScreen> {
       );
 
       if (reservationResponse.statusCode == 201) {
-        _showSuccess('✅ Table ${table.tableNumber} réservée avec succès!');
+        _showSuccess('Table ${table.tableNumber} réservée avec succès!');
         await _loadTables();
         return true;
       } else {

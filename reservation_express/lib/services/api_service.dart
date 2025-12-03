@@ -172,10 +172,6 @@ class ApiService {
                 : (reservationData['totalPrice'] as num).toDouble(),
       };
 
-      print(
-        'Envoi de la réservation avec totalPrice: ${formattedData['totalPrice']}',
-      ); // Debug
-
       return await http.post(
         Uri.parse('$baseUrl/reservations'),
         headers: headers,
@@ -188,36 +184,16 @@ class ApiService {
 
   static Future<List<Reservation>> getUserReservations(int userId) async {
     try {
-      print('🌐 Appel API: $baseUrl/reservations/user/$userId');
-
       final response = await http.get(
         Uri.parse('$baseUrl/reservations/user/$userId'),
         headers: headers,
       );
-
-      print('📡 Réponse API - Status: ${response.statusCode}');
-      print('📡 Réponse API - Body: ${response.body}');
-
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        print('✅ ${data.length} réservations reçues de l\'API');
-
         List<Reservation> reservations =
             data.map((json) => Reservation.fromJson(json)).toList();
-
         for (var i = 0; i < reservations.length; i++) {
           final reservation = reservations[i];
-          print('''
-📋 Réservation ${i + 1}:
-   - ID: ${reservation.id}
-   - User ID: ${reservation.userId}
-   - Table ID: ${reservation.tableId}
-   - Table object: ${reservation.table != null ? 'PRÉSENT' : 'ABSENT'}
-   - Table number: ${reservation.table?.tableNumber ?? 'N/A'}
-   - Date: ${reservation.getFormattedDate()}
-   - Heure: ${reservation.reservationTime}
-   - Statut: ${reservation.status}
-''');
         }
 
         return reservations;
@@ -227,26 +203,19 @@ class ApiService {
         );
       }
     } catch (e) {
-      print('❌ Erreur réseau lors du chargement des réservations: $e');
       throw Exception('Erreur réseau: $e');
     }
   }
 
   static Future<http.Response> deleteReservation(int reservationId) async {
     try {
-      print('🗑️ Suppression de la réservation ID: $reservationId');
-
       final response = await http.delete(
         Uri.parse('$baseUrl/reservations/$reservationId'),
         headers: headers,
       );
 
-      print('📡 Réponse suppression - Status: ${response.statusCode}');
-      print('📡 Réponse suppression - Body: ${response.body}');
-
       return response;
     } catch (e) {
-      print('❌ Erreur lors de la suppression de la réservation: $e');
       throw Exception('Erreur de suppression de réservation: $e');
     }
   }
@@ -256,31 +225,20 @@ class ApiService {
     int tableId,
   ) async {
     try {
-      print(
-        '🔄 Suppression de la réservation $reservationId et mise à jour de la table $tableId',
-      );
-
       final deleteResponse = await deleteReservation(reservationId);
 
       if (deleteResponse.statusCode == 200) {
-        print('✅ Réservation supprimée avec succès');
-
         final tableResponse = await updateTableStatus(tableId, 'available');
 
         if (tableResponse.statusCode == 200) {
-          print('✅ Table $tableId remise à disponible');
           return true;
         } else {
-          print(
-            '⚠️ Réservation supprimée mais erreur sur la table: ${tableResponse.statusCode}',
-          );
           return false;
         }
       }
 
       return false;
     } catch (e) {
-      print('❌ Erreur lors de la suppression combinée: $e');
       return false;
     }
   }

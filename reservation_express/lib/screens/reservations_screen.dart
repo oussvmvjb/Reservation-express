@@ -33,7 +33,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
       final userId = await AuthService.getUserId();
       if (userId != null) {
-        print('🔄 Chargement des réservations pour l\'utilisateur: $userId');
         final reservations = await ApiService.getUserReservations(userId);
 
         await _loadMissingTables(reservations);
@@ -51,7 +50,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         _showError('Utilisateur non connecté');
       }
     } catch (e) {
-      print('❌ Erreur de chargement des réservations: $e');
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -62,29 +60,21 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   }
 
   Future<void> _loadMissingTables(List<Reservation> reservations) async {
-    print('🔄 Vérification des tables manquantes...');
 
     for (var reservation in reservations) {
       if (reservation.table == null) {
-        print(
-          '📦 Table manquante pour la réservation ${reservation.id}, tableId: ${reservation.tableId}',
-        );
-
         if (!_tableCache.containsKey(reservation.tableId)) {
           try {
-            print(
-              '🌐 Chargement de la table ${reservation.tableId} depuis l\'API...',
-            );
             final table = await ApiService.getTableById(reservation.tableId);
             if (table != null) {
               _tableCache[reservation.tableId] = table;
-              print('✅ Table ${table.tableNumber} chargée avec succès');
+              print('Table ${table.tableNumber} chargée avec succès');
             } else {
-              print('❌ Table ${reservation.tableId} non trouvée');
+              print('Table ${reservation.tableId} non trouvée');
             }
           } catch (e) {
             print(
-              '❌ Erreur lors du chargement de la table ${reservation.tableId}: $e',
+              'Erreur lors du chargement de la table ${reservation.tableId}: $e',
             );
           }
         }
@@ -120,7 +110,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
           title: Text('Supprimer la réservation'),
           content: Text(
             'Êtes-vous sûr de vouloir SUPPRIMER cette réservation ?\n\n'
-            '⚠️ Cette action est irréversible !\n'
+            'Cette action est irréversible !\n'
             'La réservation sera effacée et la table remise disponible.',
           ),
           actions: [
@@ -131,7 +121,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                _showSuccess('⏳ Suppression en cours...');
+                _showSuccess('Suppression en cours...');
 
                 try {
                   final deleteResponse = await ApiService.deleteReservation(
@@ -139,8 +129,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   );
 
                   if (deleteResponse.statusCode == 200) {
-                    print('✅ Réservation $reservationId supprimée');
-
                     try {
                       final statusResponse = await ApiService.updateTableStatus(
                         tableId,
@@ -148,31 +136,24 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                       );
 
                       if (statusResponse.statusCode == 200) {
-                        print('✅ Table $tableId remise disponible');
                         _showSuccess(
-                          '✅ Réservation supprimée et table remise disponible',
+                          'Réservation supprimée et table remise disponible',
                         );
                       } else {
-                        print(
-                          '⚠️ Réservation supprimée mais erreur table: ${statusResponse.statusCode}',
-                        );
-                        _showSuccess('✅ Réservation supprimée');
+                        _showSuccess('Réservation supprimée');
                       }
                     } catch (tableError) {
-                      print(
-                        '⚠️ Réservation supprimée mais erreur table: $tableError',
-                      );
-                      _showSuccess('✅ Réservation supprimée');
+                      
+                      _showSuccess('Réservation supprimée');
                     }
 
                     await _loadReservations();
                   } else {
                     _showError(
-                      '❌ Échec de la suppression: ${deleteResponse.statusCode}',
+                      ' Échec de la suppression: ${deleteResponse.statusCode}',
                     );
                   }
                 } catch (error) {
-                  print('❌ Erreur suppression réservation: $error');
                   _showError('Erreur lors de la suppression: $error');
                 }
               },
@@ -325,7 +306,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
           ),
           SizedBox(height: 12),
           Text(
-            'Vous n\'avez pas encore de réservation.\nRéservez votre première table dès maintenant!',
+            'Vous n avez pas encore de réservation.\nRéservez votre première table dès maintenant!',
             style: TextStyle(fontSize: 16, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),

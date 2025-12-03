@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Restaurant App'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 219, 151, 23),
         foregroundColor: Colors.white,
         actions: [
           IconButton(

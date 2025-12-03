@@ -616,7 +616,7 @@ class _MenuScreenState extends State<MenuScreen> {
         });
         Navigator.pop(context);
         _showSuccess(
-          '✅ Commande créée pour la table ${latestReservation.table!.tableNumber}!',
+          'Commande créée pour la table ${latestReservation.table!.tableNumber}!',
         );
       } else {
         throw Exception('Erreur: ${response.statusCode}');
